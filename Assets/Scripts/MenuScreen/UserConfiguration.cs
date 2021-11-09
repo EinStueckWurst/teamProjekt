@@ -27,7 +27,6 @@ public class UserConfiguration : MonoBehaviour
     {
         return isActive;
     }
-
     public void setLightDir(Vector3 lightDir)
     {
         this.lightDir = lightDir;
@@ -36,7 +35,6 @@ public class UserConfiguration : MonoBehaviour
     {
         return this.lightDir;
     }
-
     public void setUserToLobbyCreator()
     {
         this.role = UserRole.LOBBY_CREATOR;
@@ -49,6 +47,4 @@ public class UserConfiguration : MonoBehaviour
     {
         this.role = UserRole.SPECTATOR;
     }
-
-
 }
