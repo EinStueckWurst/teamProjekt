@@ -19,7 +19,6 @@ public class CameraController : MonoBehaviour
     RenderTexture sobel;
     RenderTexture displayCircle;
 
-
     [SerializeField] Material identityMaterialFilter;
     [SerializeField] Material grayscaleMaterialFilter;
     [SerializeField] Material gaussianBlurrMaterialFilter;
@@ -180,8 +179,7 @@ public class CameraController : MonoBehaviour
         int maxR = 0;
         float threshold = 0.2f;
 
-        Debug.Log(imgWidth);
-        Texture2D sobelImage = toTexture2D(this.sobel, RenderTexture.active);
+        Texture2D sobelImage = Util.ToTexture2D(this.sobel, RenderTexture.active);
 
         for (int r = minRad; r < maxRad; r++)
         {
@@ -228,8 +226,6 @@ public class CameraController : MonoBehaviour
         Debug.Log("B "+maxB);
         Debug.Log("Val "+max);
         Debug.Log("R "+maxR);
-        Debug.Log("Width "+camera.width);
-        Debug.Log("Height "+camera.height);
 
         this.hough.a = maxA;
         this.hough.b = maxB;
@@ -237,36 +233,7 @@ public class CameraController : MonoBehaviour
         this.hough.radius = maxR;
     }
 
-    /* transform a RenderTexture to a Texture2D
-     * 
-     */ 
-    Texture2D toTexture2D(RenderTexture rt, RenderTexture currentActiveRt)
-    {
-        RenderTexture.active = rt;
 
-        // Create a new Texture2D and read the RenderTexture image into it
-        Texture2D tex = new Texture2D(rt.width, rt.height);
-        tex.ReadPixels(new Rect(0, 0, tex.width, tex.height), 0, 0);
-
-        // Restorie previously active render texture
-        RenderTexture.active = currentActiveRt;
-        return tex;
-    }
-
-    /* transform a Texture2D to a RenderTexture
-     * 
-     */ 
-    RenderTexture toRenderTexture(Texture2D texture2D, RenderTexture active)
-    {
-        RenderTexture rt = new RenderTexture(texture2D.width, texture2D.height, 1);
-        rt.enableRandomWrite = true;
-        rt.Create();
-        RenderTexture.active = rt;
-        Graphics.Blit(texture2D, rt, identityMaterialFilter);
-        RenderTexture.active = active;
-
-        return rt;
-    }
 
     /* crops Camera-Image based on calculated hough-transform-values
      * 
@@ -298,18 +265,6 @@ public class CameraController : MonoBehaviour
             }
         }
 
-        return toRenderTexture(cropImgTex2D, activeRt);
+        return Util.ToRenderTexture(cropImgTex2D, activeRt);
     }
-
-    /* Searches the brightest part of the sphere
-     * 
-     */
-    Vector3 getBrightPart()
-    {
-        int imgWidth = camera.width;
-        int imgHeight = camera.height;
-        float rad = imgWidth / 2;
-        return new Vector3(1, 1, 1);
-    }
-
 }
