@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -11,9 +12,36 @@ public enum UserRole
 
 public class UserConfiguration : MonoBehaviour
 {
-    private bool isActive = false;
-    private Vector3 lightDir = new Vector3(0, 0, 0);
-    private UserRole role = UserRole.SPECTATOR;
+    public string networkId;
+
+    public bool isActive = false;
+    public Vector3 lightDir = new Vector3(0, 0, 0);
+    public UserRole role = UserRole.SPECTATOR;
+
+    public UserConfiguration() { }
+
+    public UserConfiguration(
+        string networkId,
+        bool isActive,
+        Vector3 lightDir,
+        UserRole userRole
+        )
+    {
+        this.networkId = networkId;
+        this.isActive = isActive;
+        this.lightDir = lightDir;
+        this.role = userRole;
+    }
+
+    private void Start()
+    {
+        this.networkId = this.generateId();  
+    }
+
+    private string generateId()
+    {
+        return Guid.NewGuid().ToString("N");
+    }
 
     public void setActive()
     {
