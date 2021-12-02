@@ -12,6 +12,8 @@ public class Client : MonoBehaviour, INetEventListener
     [SerializeField] int portTpBroadcast = 9999;
     [SerializeField] public List<UserConfiguration> activeUsers;
 
+    [SerializeField] public GameObject lobbyPanel;
+
     NetManager netManager;
 
     public void StartClient()
@@ -88,6 +90,54 @@ public class Client : MonoBehaviour, INetEventListener
 
     public void OnNetworkReceive(NetPeer peer, NetPacketReader reader, DeliveryMethod deliveryMethod)
     {
+        string json = reader.GetString();
+        TransMissionContainerModel container = JsonUtility.FromJson<TransMissionContainerModel>(json);
+
+        switch(container.action)
+        {
+            //Actions
+            case Action.INFORM_CLIENTS_ABOUT_AMOUNT_OF_USERS:
+                if(container.dataModel == DataModel.NUM_ACTIVE_AND_NUM_PASSIVE_USERS)
+                {
+                    int numOfActiveUsers = container.NumActiveUsers;
+                    int numOfPassiveUsers= container.NumPassiveUsers;
+                    UpdateLobbyAfterUserAdded(numOfActiveUsers);
+                    Debug.Log("[CLIENT] Num of Passive Clients " + numOfPassiveUsers);
+                }
+                break;
+            default:
+                Debug.Log("[Client] Action not detected!");
+                break;
+        }
+    }
+
+    /** Activates Users that are Visualized on the Server
+     * 
+     */
+    void UpdateLobbyAfterUserAdded(int numActiveUsers)
+    {
+        this.DeactivateAllUsers();
+        for (int i = 0; i < numActiveUsers; i++)
+        {
+            Transform t = this.lobbyPanel.transform.GetChild(i);
+            if (!t.gameObject.activeInHierarchy)
+            {
+                this.lobbyPanel.transform.GetChild(i).gameObject.SetActive(true);
+            }
+        }
+    }
+    
+    //Disables all Players In the Lobby
+    private void DeactivateAllUsers()
+    {
+        for (int i = 0; i < this.lobbyPanel.transform.childCount; i++)
+        {
+            Transform t = this.lobbyPanel.transform.GetChild(i);
+            if (!t.gameObject.activeInHierarchy)
+            {
+                this.lobbyPanel.transform.GetChild(i).gameObject.SetActive(false);
+            }
+        }
     }
 
     public void OnNetworkReceiveUnconnected(IPEndPoint remoteEndPoint, NetPacketReader reader, UnconnectedMessageType messageType)

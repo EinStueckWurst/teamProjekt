@@ -57,11 +57,13 @@ public static class NetworkUtils
 
 public enum Action
 {
-    REGISTER_USER_CONFIGURATION
+    REGISTER_USER_CONFIGURATION,
+    INFORM_CLIENTS_ABOUT_AMOUNT_OF_USERS,
 }
 
 public enum DataModel
 {
-    USER_CONFIG_MODEL
+    USER_CONFIG_MODEL,
+    NUM_ACTIVE_AND_NUM_PASSIVE_USERS,
 }
 

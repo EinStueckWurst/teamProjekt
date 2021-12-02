@@ -521,6 +521,7 @@ MonoBehaviour:
   myUserConfig: {fileID: 433943990}
   portTpBroadcast: 9999
   activeUsers: []
+  lobbyPanel: {fileID: 1294068584}
 --- !u!1 &146864697
 GameObject:
   m_ObjectHideFlags: 0

@@ -129,19 +129,38 @@ public class Server : MonoBehaviour, INetEventListener
                     NetworkUtils.addUser(userConfigModel, this.activeUsers, this.passiveUsers); //wird bei ConnectionReq bereits geprüft, ob der User bereits existiert
                     UpdateLobbyAfterUserAdded();
                     Debug.Log("SERVER : Amount Of Passive Users: " + this.passiveUsers.Count);
-                    //UpdateAllConnectedClients();
+                    InformAllClientsUserAdded();
                 }
                 break;
             default:
-                Debug.Log("Action not detected");
+                Debug.Log("[Server] Action not detected!");
                 break;
 
         }
     }
 
+    /** Informs all clients about about the number of active and passive Users
+     * 
+     */
+    void InformAllClientsUserAdded()
+    {
+        TransMissionContainerModel transMissionContainerModel = new TransMissionContainerModel(
+            Action.INFORM_CLIENTS_ABOUT_AMOUNT_OF_USERS,
+            DataModel.NUM_ACTIVE_AND_NUM_PASSIVE_USERS);
+
+        transMissionContainerModel.NumActiveUsers = this.activeUsers.Count;
+        transMissionContainerModel.NumPassiveUsers = this.passiveUsers.Count;
+
+        string json = JsonUtility.ToJson(transMissionContainerModel);
+        NetDataWriter writer = new NetDataWriter();
+        writer.Put(json);
+
+        this.netManager.SendToAll(writer, DeliveryMethod.ReliableUnordered);
+    }
+
     /** Just Activates any new Users (Index of these activated Users is the same as the index of the activeUser list)
      * 
-     */ 
+     */
     void UpdateLobbyAfterUserAdded()
     {
         for(int i = 0; i < this.activeUsers.Count; i++)
