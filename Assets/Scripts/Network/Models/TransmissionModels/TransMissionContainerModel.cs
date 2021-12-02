@@ -8,8 +8,8 @@ public class TransMissionContainerModel
 {
     public Action action;
     public DataModel dataModel;
-
     public UserConfigModel configModel;
+
 
     public TransMissionContainerModel(
         Action action,

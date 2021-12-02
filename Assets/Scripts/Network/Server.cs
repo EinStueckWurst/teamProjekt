@@ -15,8 +15,10 @@ public class Server : MonoBehaviour, INetEventListener
     [SerializeField] public int serverPort = 9999;
     [SerializeField] public int maxActiveClients = 4; //included Host
 
-    [SerializeField] public int numActiveClients = 1;
+    [SerializeField] public int numActiveClients = 1; //1 because Host is active
     [SerializeField] public int numPassiveClients = 0;
+
+    [SerializeField] public GameObject lobbyPanel;
 
 
     NetManager netManager;
@@ -34,11 +36,10 @@ public class Server : MonoBehaviour, INetEventListener
         this.netManager.UpdateTime = 15;
         this.netManager.ReuseAddress = true;
 
-
         this.activeUsers.Add(myUserConfig);
         Debug.Log("SERVER STARTED");
 
-        Debug.Log("[SERVER] MY USER CONFIG: " + this.myUserConfig.networkId);
+        Debug.Log("[SERVER] MY NETWORKID: " + this.myUserConfig.networkId);
     }
 
     /* Stops the Server
@@ -74,19 +75,21 @@ public class Server : MonoBehaviour, INetEventListener
             string reqDataJson = request.Data.GetString();
             if (reqDataJson != null)
             {
-                Debug.Log("[SERVER] RECIEVED COnfig: " + reqDataJson);
-
+                //Deserialize json into UserConfigModel class
                 UserConfigModel userConfigModel = JsonUtility.FromJson<UserConfigModel>(reqDataJson);
 
+                //Check if User is already registered -- basically just check wether user is in activeUsers list or passiveUsers list
                 if (!NetworkUtils.userAlreadyExists(userConfigModel, this.activeUsers) && !NetworkUtils.userAlreadyExists(userConfigModel, this.passiveUsers))
                 {
                     if (userConfigModel.isActive && this.activeUsers.Count <= this.maxActiveClients)
                     {
+                        //Accept Connection and trigger OnPeerConnected for the Client
                         request.Accept();
                         Debug.Log("[SERVER] Client ConnectionRequest ACCEPTED");
                     }
                     else if (!userConfigModel.isActive)
                     {
+                        //Accept Connection and trigger OnPeerConnected for the Client
                         request.Accept();
                         Debug.Log("[SERVER] Client ConnectionRequest ACCEPTED");
                     }
@@ -95,6 +98,11 @@ public class Server : MonoBehaviour, INetEventListener
                         request.Reject();
                         Debug.Log("[SERVER] Client ConnectionRequest REJECTED");
                     }
+                }
+                else
+                {
+                    request.Reject();
+                    Debug.Log("[SERVER] Client ConnectionRequest REJECTED");
                 }
             }
         }
@@ -113,13 +121,15 @@ public class Server : MonoBehaviour, INetEventListener
 
         switch (container.action)
         {
+            //Action to add the User
             case Action.REGISTER_USER_CONFIGURATION:
-                Debug.Log("Kann man adden: Registrtriert als User");
-                if(container.dataModel == DataModel.USER_CONFIGURATION)
+                if(container.dataModel == DataModel.USER_CONFIG_MODEL)
                 {
-                    RegisterUserModel registerUserModel = JsonUtility.FromJson<RegisterUserModel>(json);
-                    NetworkUtils.addUser(registerUserModel, this.activeUsers, this.passiveUsers); //wird bei Connection Req bereits gerüft, ob der User bereits existiert
-
+                    UserConfigModel userConfigModel = container.configModel;
+                    NetworkUtils.addUser(userConfigModel, this.activeUsers, this.passiveUsers); //wird bei ConnectionReq bereits geprüft, ob der User bereits existiert
+                    UpdateLobbyAfterUserAdded();
+                    Debug.Log("SERVER : Amount Of Passive Users: " + this.passiveUsers.Count);
+                    //UpdateAllConnectedClients();
                 }
                 break;
             default:
@@ -129,12 +139,25 @@ public class Server : MonoBehaviour, INetEventListener
         }
     }
 
+    /** Just Activates any new Users (Index of these activated Users is the same as the index of the activeUser list)
+     * 
+     */ 
+    void UpdateLobbyAfterUserAdded()
+    {
+        for(int i = 0; i < this.activeUsers.Count; i++)
+        {
+            Transform t = this.lobbyPanel.transform.GetChild(i);
+            if(!t.gameObject.activeInHierarchy)
+            {
+                this.lobbyPanel.transform.GetChild(i).gameObject.SetActive(true);
+            }
+        }
+    }
+
     public void OnNetworkReceiveUnconnected(IPEndPoint remoteEndPoint, NetPacketReader reader, UnconnectedMessageType messageType)
     {
         if (messageType == UnconnectedMessageType.Broadcast)
         {
-            reader.Clear();
-            Debug.Log("[SERVER] Received discovery request. Send discovery response");
             NetDataWriter resp = new NetDataWriter();
             resp.Put(1);
             this.netManager.SendUnconnectedMessage(resp, remoteEndPoint);
@@ -143,7 +166,6 @@ public class Server : MonoBehaviour, INetEventListener
 
     public void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo)
     {
-
     }
 
     public void OnNetworkError(IPEndPoint endPoint, SocketError socketError)
@@ -154,26 +176,3 @@ public class Server : MonoBehaviour, INetEventListener
     {
     }
 }
-
-
-
-
-///* Adds a User
-// * 
-// */
-//private void addUser(UserConfigModel user)
-//{
-//    if (!NetworkUtils.userAlreadyExists(user,this.activeUsers) && !NetworkUtils.userAlreadyExists(user, this.passiveUsers))
-//    {
-//        if (user.isActive && this.activeUsers.Count <= this.maxActiveClients )
-//        {
-//            UserConfiguration uc = NetworkUtils.toUserConfiguration(user);
-//            this.activeUsers.Add(uc);
-//        }
-//        else if(!user.isActive)
-//        {
-//            UserConfiguration uc = NetworkUtils.toUserConfiguration(user);
-//            this.passiveUsers.Add(uc);
-//        }
-//    }
-//}

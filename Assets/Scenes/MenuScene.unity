@@ -1480,7 +1480,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &767963082
 RectTransform:
   m_ObjectHideFlags: 0
@@ -2137,6 +2137,7 @@ MonoBehaviour:
   maxActiveClients: 4
   numActiveClients: 1
   numPassiveClients: 0
+  lobbyPanel: {fileID: 1294068584}
 --- !u!224 &1253209237 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 9174548296776472268, guid: 065bb9ddc971fea49b8b3ac046f523d3,
@@ -3782,7 +3783,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1905701273
 RectTransform:
   m_ObjectHideFlags: 0

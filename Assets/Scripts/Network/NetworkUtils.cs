@@ -40,9 +40,8 @@ public static class NetworkUtils
         return false;
     }
 
-    public static void addUser(RegisterUserModel registerUserModel, List<UserConfiguration> activeUsers, List<UserConfiguration> passiveUsers)
+    public static void addUser(UserConfigModel userConfigModel, List<UserConfiguration> activeUsers, List<UserConfiguration> passiveUsers)
     {
-        UserConfigModel userConfigModel = registerUserModel.userConfigModel;
         UserConfiguration uc = NetworkUtils.toUserConfiguration(userConfigModel);
 
         if (uc.isActive)
@@ -63,6 +62,6 @@ public enum Action
 
 public enum DataModel
 {
-    USER_CONFIGURATION
+    USER_CONFIG_MODEL
 }
 

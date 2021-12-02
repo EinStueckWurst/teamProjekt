@@ -23,7 +23,7 @@ public class Client : MonoBehaviour, INetEventListener
         this.netManager.UpdateTime = 15;
 
         Debug.Log("CLIENT Started");
-        Debug.Log("[Client] MY USER CONFIG: " + this.myUserConfig.networkId);
+        Debug.Log("[Client] MY NETWORKID: " + this.myUserConfig.networkId);
     }
 
     public void StopClient()
@@ -32,6 +32,7 @@ public class Client : MonoBehaviour, INetEventListener
         {
             if (netManager != null)
             {
+                this.netManager.DisconnectAll();
                 this.netManager.Stop();
             }
             Debug.Log("CLIENT Stopped ");
@@ -56,7 +57,6 @@ public class Client : MonoBehaviour, INetEventListener
 
         if(peer != null && peer.ConnectionState == ConnectionState.Connected)
         {
-
         } 
         else
         {
@@ -71,19 +71,18 @@ public class Client : MonoBehaviour, INetEventListener
 
     public void OnPeerConnected(NetPeer peer)
     {
-        Debug.Log("ON PEER COnnected");
-        //Registriere meine UserConfig zum Server
+        //Package myUserConfig into a TransmissionContainerModel and setup Action and Datamodel
+        //so on the serverside you can execute with a switch case your desired Action
         UserConfigModel userConfigModel = NetworkUtils.toUserConfigurationModel(this.myUserConfig);
         TransMissionContainerModel transMissionContainerModel = new TransMissionContainerModel(
             Action.REGISTER_USER_CONFIGURATION, 
-            DataModel.USER_CONFIGURATION, 
+            DataModel.USER_CONFIG_MODEL, 
             userConfigModel);
-
         string json = JsonUtility.ToJson(transMissionContainerModel);
-
         NetDataWriter writer = new NetDataWriter();
         writer.Put(json);
 
+        //Triggering OnNetworkReceive on the serverside and execute the Desired Action
         peer.Send(writer, DeliveryMethod.ReliableOrdered);
     }
 
@@ -95,44 +94,37 @@ public class Client : MonoBehaviour, INetEventListener
     {
         if (this.netManager.ConnectedPeersCount == 0 && reader.GetInt() == 1)
         {
-            reader.Clear();
+            //Just Debug Info to check what myCLient has
             Debug.Log("[CLIENT] Received discovery response. Connecting to: " + remoteEndPoint);
-
             Debug.Log("[Client] MY USER CONFIG NET ID: " + this.myUserConfig.networkId);
             Debug.Log("[Client] MY USER CONFIG IS ACTIVE: " + this.myUserConfig.isActive);
             Debug.Log("[Client] MY USER CONFIG Light DIr: " + this.myUserConfig.lightDir);
             Debug.Log("[Client] MY USER CONFIG ROLE: " + this.myUserConfig.role);
 
+            //Package MyUserInformation into a Json
             UserConfigModel userConfigModel = NetworkUtils.toUserConfigurationModel(this.myUserConfig);
-
-            userConfigModel.networkId = "1234F";
             string json = JsonUtility.ToJson(userConfigModel);
-
-            NetDataWriter writer = new NetDataWriter(true);
-            writer.Reset();
+            NetDataWriter writer = new NetDataWriter();
             writer.Put(json);
 
+            //Sending to Server a ConnectionRequest
             this.netManager.Connect(remoteEndPoint,writer);
         }
     }
 
     public void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo)
     {
-
     }
 
     public void OnNetworkError(IPEndPoint endPoint, SocketError socketError)
     {
-
     }
 
     public void OnNetworkLatencyUpdate(NetPeer peer, int latency)
     {
-
     }
 
     public void OnConnectionRequest(ConnectionRequest request)
     {
-
     }
 }
