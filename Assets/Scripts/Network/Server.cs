@@ -4,23 +4,15 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
+using System.Threading;
 using UnityEngine;
 
 public class Server : MonoBehaviour, INetEventListener
 {
     [SerializeField] public UserConfiguration myUserConfig;
-    [SerializeField] public List<UserConfiguration> activeUsers;
-    [SerializeField] public List<UserConfiguration> passiveUsers;
-
-    [SerializeField] public int serverPort = 9999;
-    [SerializeField] public int maxActiveClients = 4; //included Host
-
-    [SerializeField] public int numActiveClients = 1; //1 because Host is active
-    [SerializeField] public int numPassiveClients = 0;
-
+    [SerializeField] public ServerDataStorage serverData;
     [SerializeField] public GameObject lobbyPanel;
-
-
+    
     NetManager netManager;
 
     /* Initializes the Server
@@ -30,16 +22,20 @@ public class Server : MonoBehaviour, INetEventListener
     {
         this.netManager = new NetManager(this);
 
-        this.netManager.Start(serverPort);
+        this.netManager.Start(this.serverData.serverPort);
         this.netManager.BroadcastReceiveEnabled = true;
         this.netManager.UnconnectedMessagesEnabled = true;
         this.netManager.UpdateTime = 15;
         this.netManager.ReuseAddress = true;
 
-        this.activeUsers.Add(myUserConfig);
-        Debug.Log("SERVER STARTED");
+        this.serverData.activeUsers.Add(myUserConfig);
+        this.serverData.MyNetworkId = this.myUserConfig.networkId;
 
+        Debug.Log("SERVER STARTED");
         Debug.Log("[SERVER] MY NETWORKID: " + this.myUserConfig.networkId);
+
+        //Mean Light Dir initialized with Server Light direction
+        this.serverData.meanLightDir = myUserConfig.getLightDir();
     }
 
     /* Stops the Server
@@ -51,6 +47,7 @@ public class Server : MonoBehaviour, INetEventListener
         {
             if (this.netManager != null)
             {
+                this.netManager.DisconnectAll();
                 this.netManager.Stop();
             }
             Debug.Log("SERVER Stopped");
@@ -65,6 +62,7 @@ public class Server : MonoBehaviour, INetEventListener
         if (this.netManager != null && this.netManager.IsRunning)
         {
             this.netManager.PollEvents();
+            Thread.Sleep(15);
         }
     }
 
@@ -79,9 +77,9 @@ public class Server : MonoBehaviour, INetEventListener
                 UserConfigModel userConfigModel = JsonUtility.FromJson<UserConfigModel>(reqDataJson);
 
                 //Check if User is already registered -- basically just check wether user is in activeUsers list or passiveUsers list
-                if (!NetworkUtils.userAlreadyExists(userConfigModel, this.activeUsers) && !NetworkUtils.userAlreadyExists(userConfigModel, this.passiveUsers))
+                if (!NetworkUtils.userAlreadyExists(userConfigModel, this.serverData.activeUsers) && !NetworkUtils.userAlreadyExists(userConfigModel, this.serverData.passiveUsers))
                 {
-                    if (userConfigModel.isActive && this.activeUsers.Count <= this.maxActiveClients)
+                    if (userConfigModel.isActive && this.serverData.activeUsers.Count <= this.serverData.maxActiveClients)
                     {
                         //Accept Connection and trigger OnPeerConnected for the Client
                         request.Accept();
@@ -126,17 +124,41 @@ public class Server : MonoBehaviour, INetEventListener
                 if(container.dataModel == DataModel.USER_CONFIG_MODEL)
                 {
                     UserConfigModel userConfigModel = container.configModel;
-                    NetworkUtils.addUser(userConfigModel, this.activeUsers, this.passiveUsers); //wird bei ConnectionReq bereits geprüft, ob der User bereits existiert
+                    NetworkUtils.addUser(userConfigModel, this.serverData.activeUsers, this.serverData.passiveUsers); //wird bei ConnectionReq bereits geprüft, ob der User bereits existiert
                     UpdateLobbyAfterUserAdded();
-                    Debug.Log("SERVER : Amount Of Passive Users: " + this.passiveUsers.Count);
+                    Debug.Log("SERVER : Amount Of Passive Users: " + this.serverData.passiveUsers.Count);
                     InformAllClientsUserAdded();
+
+                    if (userConfigModel.isActive)
+                    {
+                        this.serverData.meanLightDir = NetworkUtils.averageLightDirections(this.serverData.activeUsers);
+                        InformAllClientsAverageLightDir();
+                    }
                 }
                 break;
             default:
                 Debug.Log("[Server] Action not detected!");
                 break;
-
         }
+    }
+
+    /** Informs all clients about the new Averaged LightDirection
+     * 
+     */
+    void InformAllClientsAverageLightDir()
+    {
+        TransMissionContainerModel transMissionContainerModel = new TransMissionContainerModel(
+            Action.INFORM_CLIENTS_ABOUT_MEAN_LIGHT_AVERAGE,
+            DataModel.LIGHT_DIRECTION
+            );
+
+        transMissionContainerModel.MeanLightDir = this.serverData.meanLightDir;
+
+        string json = JsonUtility.ToJson(transMissionContainerModel);
+        NetDataWriter writer = new NetDataWriter();
+        writer.Put(json);
+
+        this.netManager.SendToAll(writer, DeliveryMethod.ReliableUnordered);
     }
 
     /** Informs all clients about about the number of active and passive Users
@@ -148,8 +170,8 @@ public class Server : MonoBehaviour, INetEventListener
             Action.INFORM_CLIENTS_ABOUT_AMOUNT_OF_USERS,
             DataModel.NUM_ACTIVE_AND_NUM_PASSIVE_USERS);
 
-        transMissionContainerModel.NumActiveUsers = this.activeUsers.Count;
-        transMissionContainerModel.NumPassiveUsers = this.passiveUsers.Count;
+        transMissionContainerModel.NumActiveUsers = this.serverData.activeUsers.Count;
+        transMissionContainerModel.NumPassiveUsers = this.serverData.passiveUsers.Count;
 
         string json = JsonUtility.ToJson(transMissionContainerModel);
         NetDataWriter writer = new NetDataWriter();
@@ -163,7 +185,7 @@ public class Server : MonoBehaviour, INetEventListener
      */
     void UpdateLobbyAfterUserAdded()
     {
-        for(int i = 0; i < this.activeUsers.Count; i++)
+        for(int i = 0; i < this.serverData.activeUsers.Count; i++)
         {
             Transform t = this.lobbyPanel.transform.GetChild(i);
             if(!t.gameObject.activeInHierarchy)

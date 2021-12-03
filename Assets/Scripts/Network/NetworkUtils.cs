@@ -53,17 +53,36 @@ public static class NetworkUtils
             passiveUsers.Add(uc);
         }
     }
+
+    /** Returns the mean of all light directions ---> basically 1/n * (v1 + v2 + ... + vn)
+     * 
+     */ 
+    public static Vector3 averageLightDirections(List<UserConfiguration> activeUsers)
+    {
+        Vector3 res = Vector3.zero;
+        for(int i = 0; i < activeUsers.Count; i++)
+        {
+            res += activeUsers[i].getLightDir();
+        }
+
+        res /= activeUsers.Count;
+
+        return res;
+    }
 }
 
 public enum Action
 {
     REGISTER_USER_CONFIGURATION,
     INFORM_CLIENTS_ABOUT_AMOUNT_OF_USERS,
+    INFORM_CLIENTS_ABOUT_MEAN_LIGHT_AVERAGE,
+
 }
 
 public enum DataModel
 {
     USER_CONFIG_MODEL,
     NUM_ACTIVE_AND_NUM_PASSIVE_USERS,
+    LIGHT_DIRECTION,
 }
 

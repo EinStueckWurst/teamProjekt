@@ -12,13 +12,13 @@ public class TransMissionContainerModel
 
     public int NumActiveUsers;
     public int NumPassiveUsers;
+    
+    public Vector3 MeanLightDir;
 
     public TransMissionContainerModel(
         Action action,
         DataModel dataModel,
-        UserConfigModel configModel = null,
-        int NumActiveUsers = -1, //null geht nicht --- also ist es -1
-        int NumPassiveUsers = -1
+        UserConfigModel configModel = null
         )
     {
         this.action = action;
@@ -27,14 +27,6 @@ public class TransMissionContainerModel
         if (configModel != null)
         {
             this.configModel = configModel;
-        } 
-        if (NumActiveUsers != -1)
-        {
-            this.NumActiveUsers = NumActiveUsers;
-        }        
-        if (NumPassiveUsers != -1)
-        {
-            this.NumPassiveUsers = NumPassiveUsers;
         }
     }
 }

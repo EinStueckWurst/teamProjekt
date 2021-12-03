@@ -4,18 +4,16 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
+using System.Threading;
 using UnityEngine;
 
 public class Client : MonoBehaviour, INetEventListener
 {
     [SerializeField] public UserConfiguration myUserConfig;
-    [SerializeField] int portTpBroadcast = 9999;
-    [SerializeField] public List<UserConfiguration> activeUsers;
-
     [SerializeField] public GameObject lobbyPanel;
+    [SerializeField] public ClientDataStorage clientData;
 
     NetManager netManager;
-
     public void StartClient()
     {
         this.netManager = new NetManager(this);
@@ -24,6 +22,7 @@ public class Client : MonoBehaviour, INetEventListener
         this.netManager.BroadcastReceiveEnabled = true;
         this.netManager.UpdateTime = 15;
 
+        this.clientData.MyNetworkId = this.myUserConfig.networkId;
         Debug.Log("CLIENT Started");
         Debug.Log("[Client] MY NETWORKID: " + this.myUserConfig.networkId);
     }
@@ -41,6 +40,9 @@ public class Client : MonoBehaviour, INetEventListener
         }
     }
 
+    /* Update is called once per frame
+     * 
+     */
     private void Update()
     {
         if (this.netManager != null && this.netManager.IsRunning)
@@ -50,6 +52,7 @@ public class Client : MonoBehaviour, INetEventListener
             {
                 this.senDiscoveryRequest();
             }
+            Thread.Sleep(15);
         }
     }
 
@@ -67,19 +70,23 @@ public class Client : MonoBehaviour, INetEventListener
 
             NetDataWriter writer = new NetDataWriter();
             writer.Put(json);
-            this.netManager.SendBroadcast(writer, this.portTpBroadcast);
+            this.netManager.SendBroadcast(writer, this.clientData.portToBroadcast);
         }
     }
 
     public void OnPeerConnected(NetPeer peer)
     {
+
+        this.clientData.serverPeer = peer;
+
         //Package myUserConfig into a TransmissionContainerModel and setup Action and Datamodel
         //so on the serverside you can execute with a switch case your desired Action
         UserConfigModel userConfigModel = NetworkUtils.toUserConfigurationModel(this.myUserConfig);
         TransMissionContainerModel transMissionContainerModel = new TransMissionContainerModel(
             Action.REGISTER_USER_CONFIGURATION, 
-            DataModel.USER_CONFIG_MODEL, 
-            userConfigModel);
+            DataModel.USER_CONFIG_MODEL);
+
+        transMissionContainerModel.configModel = userConfigModel;
         string json = JsonUtility.ToJson(transMissionContainerModel);
         NetDataWriter writer = new NetDataWriter();
         writer.Put(json);
@@ -99,10 +106,17 @@ public class Client : MonoBehaviour, INetEventListener
             case Action.INFORM_CLIENTS_ABOUT_AMOUNT_OF_USERS:
                 if(container.dataModel == DataModel.NUM_ACTIVE_AND_NUM_PASSIVE_USERS)
                 {
-                    int numOfActiveUsers = container.NumActiveUsers;
-                    int numOfPassiveUsers= container.NumPassiveUsers;
-                    UpdateLobbyAfterUserAdded(numOfActiveUsers);
-                    Debug.Log("[CLIENT] Num of Passive Clients " + numOfPassiveUsers);
+                    this.clientData.numOfActiveUsers = container.NumActiveUsers;
+                    this.clientData.numOfPassiveUsers = container.NumPassiveUsers;
+                    UpdateLobbyAfterUserAdded(this.clientData.numOfActiveUsers);
+                    Debug.Log("[CLIENT] Num of Passive Clients " + this.clientData.numOfActiveUsers);
+                }
+                break;
+            case Action.INFORM_CLIENTS_ABOUT_MEAN_LIGHT_AVERAGE:
+                if(container.dataModel == DataModel.LIGHT_DIRECTION)
+                {
+                    this.clientData.meanLightDir = container.MeanLightDir;
+                    Debug.Log("[CLIENT] Mean Light Dir recieved: "+ this.clientData.meanLightDir);
                 }
                 break;
             default:
@@ -126,8 +140,10 @@ public class Client : MonoBehaviour, INetEventListener
             }
         }
     }
-    
-    //Disables all Players In the Lobby
+
+    /** Disables all PlayerGameobjects In the Lobby
+     * 
+     */
     private void DeactivateAllUsers()
     {
         for (int i = 0; i < this.lobbyPanel.transform.childCount; i++)
