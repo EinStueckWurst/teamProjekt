@@ -91,6 +91,7 @@ public class Client : MonoBehaviour, INetEventListener
         NetDataWriter writer = new NetDataWriter();
         writer.Put(json);
 
+        
         //Triggering OnNetworkReceive on the serverside and execute the Desired Action
         peer.Send(writer, DeliveryMethod.ReliableOrdered);
     }
