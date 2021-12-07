@@ -5,7 +5,7 @@ using UnityEngine.UI;
 
 public class Lighting : MonoBehaviour
 {
-    [SerializeField] public Light light;
+    [SerializeField] public Light lightObj;
     [SerializeField] public RawImage capturedPhoto;
     [SerializeField] public UserConfiguration userConfiguration;
 
@@ -74,7 +74,7 @@ public class Lighting : MonoBehaviour
 
         Quaternion lightDirection = Quaternion.LookRotation(direction);
 
-        light.transform.rotation = Quaternion.Slerp(light.transform.rotation, lightDirection, 1);
+        lightObj.transform.rotation = Quaternion.Slerp(lightObj.transform.rotation, lightDirection, 1);
     }
 
     /** Saves Lightdirection in Userconfig

@@ -25,7 +25,7 @@ public static class Util
      */
     public static RenderTexture ToRenderTexture(Texture2D texture2D, RenderTexture active)
     {
-        RenderTexture rt = new RenderTexture(texture2D.width, texture2D.height, 1);
+        RenderTexture rt = new RenderTexture(texture2D.width, texture2D.height, 24);
         rt.enableRandomWrite = true;
         rt.Create();
         RenderTexture.active = rt;
@@ -40,7 +40,7 @@ public static class Util
      */ 
     public static RenderTexture fromTextureToRenderTexture(Texture texture)
     {
-        RenderTexture renderTexture = new RenderTexture(texture.width, texture.height, 1);
+        RenderTexture renderTexture = new RenderTexture(texture.width, texture.height, 24);
         Graphics.Blit(texture, renderTexture);
 
         return renderTexture;

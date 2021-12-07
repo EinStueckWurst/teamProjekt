@@ -1,0 +1,39 @@
+﻿// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+
+// Create a RenderTexture with enableRandomWrite flag and set it
+// with cs.SetTexture
+RWTexture2D<float4> _Result; //Can be removed only for Debugging
+RWTexture2D<float4> _InputTexture;
+
+RWStructuredBuffer<int> _VoteBuffer;
+
+cbuffer globals {
+    unsigned int _ResWidth;
+    unsigned int _ResHeight;
+    int _Radius;
+    float _Threshold;
+};
+
+[numthreads(8,8,1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    // TODO: insert actual code here!
+
+    float red = _InputTexture[id.xy].r;
+    float green = _InputTexture[id.xy].g;
+    float blue = _InputTexture[id.xy].b;
+    uint3 center;
+
+    if (red > _Threshold) {
+        for (int theta = 0; theta <= 360; theta++) {
+            center.x = id.x + _Radius * cos(theta);
+			center.y = id.y + _Radius * sin(theta);
+
+            if (center.x >= 0 && center.x < _ResWidth && center.y >= 0 && center.y < _ResHeight) {
+                _VoteBuffer[center.y * _ResWidth + center.x]++;
+                _Result[center.xy] = float4(0, 0, 1, 1); //Can be Removed only for Debbuging
+            }
+        }
+    }
+}

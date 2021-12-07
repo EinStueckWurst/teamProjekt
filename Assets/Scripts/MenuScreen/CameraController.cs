@@ -7,10 +7,9 @@ using UnityEngine.UI;
 public class CameraController : MonoBehaviour
 {
     [SerializeField] RawImage rawCamDisplay;
-    [SerializeField] RawImage capturedPhoto;
     [SerializeField] RawImage capturedPhotoRaw;
 
-    static WebCamTexture camera;
+    static WebCamTexture cameraObj;
     bool camAvailable = false;
 
     /** Initializes settings for the Camera
@@ -39,15 +38,15 @@ public class CameraController : MonoBehaviour
             if (deviceCam.isFrontFacing)
             {
                 float aspect = (float)(Screen.width / Screen.height);
-                camera = new WebCamTexture(deviceCam.name, Mathf.FloorToInt(aspect * 400), 400);
+                cameraObj = new WebCamTexture(deviceCam.name, Mathf.FloorToInt(aspect * 400), 400);
                 break;
             }
         }
 
-        if (camera == null) return;
+        if (cameraObj == null) return;
 
-        camera.Play();
-        this.rawCamDisplay.texture = camera;
+        cameraObj.Play();
+        this.rawCamDisplay.texture = cameraObj;
         camAvailable = true;
     }
 
@@ -56,9 +55,9 @@ public class CameraController : MonoBehaviour
      */ 
     public void ActivateCamera()
     {
-        if (camera != null && !camera.isPlaying)
+        if (cameraObj != null && !cameraObj.isPlaying)
         {
-            camera.Play();
+            cameraObj.Play();
             camAvailable = true;
         }
     }
@@ -68,9 +67,9 @@ public class CameraController : MonoBehaviour
      */ 
     public void DeactivateCamera()
     {
-        if (camera != null)
+        if (cameraObj != null)
         {
-            camera.Stop();
+            cameraObj.Stop();
             camAvailable = false;
         }
     }
@@ -80,7 +79,7 @@ public class CameraController : MonoBehaviour
      */ 
     public void TakePhoto()
     {
-        if(camAvailable && camera.isPlaying)
+        if(camAvailable && cameraObj.isPlaying)
         {
             StartCoroutine(this.StartTakingPhotoCoroutine());
         }
@@ -88,7 +87,7 @@ public class CameraController : MonoBehaviour
 
     private IEnumerator StartTakingPhotoCoroutine()
     {
-        this.capturedPhotoRaw.texture = camera;
+        this.capturedPhotoRaw.texture = cameraObj;
 
         //ApplyFilters();
         //HoughCompute();

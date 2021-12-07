@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -14,12 +15,15 @@ public class Calibration : MonoBehaviour
     RenderTexture gaussianBlurr;
     RenderTexture sobel;
     RenderTexture displayCircle;
+    public RenderTexture houghTransformFilter; // Debugging can be removed
 
     [SerializeField] Material identityMaterialFilter;
     [SerializeField] Material grayscaleMaterialFilter;
     [SerializeField] Material gaussianBlurrMaterialFilter;
     [SerializeField] Material sobelMaterialFilter;
     [SerializeField] Material displayCircleMaterialFilter;
+
+    [SerializeField] ComputeShader houghComputeShader;
 
     public struct HoughMaxVoteProp
     {
@@ -43,62 +47,136 @@ public class Calibration : MonoBehaviour
 
         this.InitializeFilters();
     }
+
+    /** Initializes All RenderTextures
+     * 
+     */ 
     void InitializeFilters()
     {
-        unfiltered = new RenderTexture(imgWidth, this.imgHeight, 1);
+        unfiltered = new RenderTexture(imgWidth, this.imgHeight, 24);
         unfiltered.enableRandomWrite = true;
         unfiltered.Create();
 
-        grayScale = new RenderTexture(imgWidth, this.imgHeight, 1);
+        grayScale = new RenderTexture(imgWidth, this.imgHeight, 24);
         grayScale.enableRandomWrite = true;
         grayScale.Create();
 
-        gaussianBlurr = new RenderTexture(imgWidth, imgHeight, 1);
+        gaussianBlurr = new RenderTexture(imgWidth, imgHeight, 24);
         gaussianBlurr.enableRandomWrite = true;
         gaussianBlurr.Create();
 
-        sobel = new RenderTexture(imgWidth, imgHeight, 1);
+        sobel = new RenderTexture(imgWidth, imgHeight, 24);
         sobel.enableRandomWrite = true;
         sobel.Create();
 
-        displayCircle = new RenderTexture(imgWidth, imgHeight, 1);
+        displayCircle = new RenderTexture(imgWidth, imgHeight, 24);
         displayCircle.enableRandomWrite = true;
         displayCircle.Create();
+
+        //Debugging can be removed
+        houghTransformFilter = new RenderTexture(imgWidth, imgHeight, 24);
+        houghTransformFilter.enableRandomWrite = true;
+        houghTransformFilter.Create();
     }
 
+    /** Executes the Calibration over the CPU
+     * 
+     */
     public void CalibrateWithCPU()
     {
         this.ApplyFilters();
         this.HoughComputeCPU();
-
-        //Get Hough Information from Shader
-        displayCircleMaterialFilter.SetFloat("_CenterA", this.hough.a);
-        displayCircleMaterialFilter.SetFloat("_CenterB", this.hough.b);
-        displayCircleMaterialFilter.SetFloat("_Radius", this.hough.radius);
-
-        this.resultImg.texture = this.cropRenderTexture(RenderTexture.active);
+        Debug.Log("-----------Hough Calculation with CPU-----------");
+        Debug.Log("A " + this.hough.a);
+        Debug.Log("B " + this.hough.b);
+        Debug.Log("Val " + this.hough.maxVal);
+        Debug.Log("R " + this.hough.radius);
+        Debug.Log("----------------------------------------------");
+        this.resultImg.texture = this.cropRenderTextureWithCPU(RenderTexture.active);
     }
 
+    /** Executes the Calibration over the GPU
+     * 
+     */ 
     public void CalibrateWithGPU()
     {
-        Debug.Log("NEED To BE Implemented");
-        //this.ApplyFilters();
-        //this.HoughComputeCPU();
-
-        ////Get Hough Information from Shader
-        //displayCircleMaterialFilter.SetFloat("_CenterA", this.hough.a);
-        //displayCircleMaterialFilter.SetFloat("_CenterB", this.hough.b);
-        //displayCircleMaterialFilter.SetFloat("_Radius", this.hough.radius);
-
-        //this.resultImg.texture = this.cropRenderTexture(RenderTexture.active);
+        this.ApplyFilters();
+        this.HoughComputeGPU();
+        Debug.Log("-----------Hough Calculation with GPU-----------");
+        Debug.Log("A " + this.hough.a);
+        Debug.Log("B " + this.hough.b);
+        Debug.Log("Val " + this.hough.maxVal);
+        Debug.Log("R " + this.hough.radius);
+        Debug.Log("----------------------------------------------");
+        this.resultImg.texture = this.cropRenderTextureWithGPU();
     }
 
+    /** Applying Filters before HoughComputation grayscale -> gaussian Blurr -> sobel
+     * 
+     */
     void ApplyFilters()
     {
         Graphics.Blit(this.capturedPhoto.texture, unfiltered, identityMaterialFilter);
         Graphics.Blit(unfiltered, grayScale, grayscaleMaterialFilter);
         Graphics.Blit(grayScale, gaussianBlurr, gaussianBlurrMaterialFilter);
         Graphics.Blit(gaussianBlurr, sobel, sobelMaterialFilter);
+    }
+
+    void HoughComputeGPU()
+    {
+        int minRad = 57;
+        int maxRad = imgWidth / 2;
+        this.hough.maxVal = 0;
+        float threshHold = 0.2f;
+
+        //Select Kernel
+        int houghKernel = this.houghComputeShader.FindKernel("CSMain");
+        //Initialize VoteBuffer
+        //Hough Compute Shader
+
+        ComputeBuffer voteBuffer = new ComputeBuffer(imgWidth * imgHeight, sizeof(int));
+        int[] resultVotes = new int[imgWidth * imgHeight];
+
+        for (int rad = minRad; rad < maxRad; rad++)
+        {
+            //Clears VoteBuffer
+            voteBuffer.SetData(new int[imgWidth * imgHeight]);
+
+            //Assign Properties 
+            this.houghComputeShader.SetTexture(houghKernel, "_Result", this.houghTransformFilter); //Debuggingg can be removed
+
+            this.houghComputeShader.SetTexture(houghKernel, "_InputTexture", this.sobel);
+            this.houghComputeShader.SetBuffer(houghKernel, "_VoteBuffer", voteBuffer);
+
+            this.houghComputeShader.SetInt("_ResWidth", imgWidth);
+            this.houghComputeShader.SetInt("_ResHeight", imgHeight);
+            this.houghComputeShader.SetInt("_Radius", rad);
+            this.houghComputeShader.SetFloat("_Threshold", threshHold);
+
+            //X = 8
+            //Y = 8
+            this.houghComputeShader.Dispatch(houghKernel, imgWidth/8, imgHeight/8, 1);
+
+            //Extracts the Calculated Votebuffer and takes the highest Value
+            resultVotes = new int[imgWidth * imgHeight];
+            voteBuffer.GetData(resultVotes);
+            int currentMaxVal = resultVotes.Max();
+
+            //always take the bigger val
+            if (currentMaxVal > this.hough.maxVal)
+            {
+                //this.capturedPhoto.texture = houghTransformFilter; //For Debugging can be removed
+                this.hough.maxVal = currentMaxVal;
+                int indx = Array.IndexOf(resultVotes, currentMaxVal);
+
+                this.hough.a = (indx % imgWidth);
+                this.hough.b = (indx - this.hough.a) / this.imgWidth;
+                this.hough.radius = rad;
+            }
+        }
+
+        voteBuffer.Dispose();
+
     }
 
     void HoughComputeCPU()
@@ -162,13 +240,6 @@ public class Calibration : MonoBehaviour
                 }
             }
         }
-
-        Debug.Log("-----------Hough Calculation with CPU-----------");
-        Debug.Log("A " + maxA);
-        Debug.Log("B " + maxB);
-        Debug.Log("Val " + max);
-        Debug.Log("R " + maxR);
-        Debug.Log("----------------------------------------------");
         this.hough.a = maxA;
         this.hough.b = maxB;
         this.hough.maxVal = max;
@@ -178,7 +249,7 @@ public class Calibration : MonoBehaviour
     /* crops Camera-Image based on calculated hough-transform-values
      * 
      */
-    RenderTexture cropRenderTexture(RenderTexture activeRt)
+    RenderTexture cropRenderTextureWithCPU(RenderTexture activeRt)
     {
         int left = this.hough.a - this.hough.radius;
         int right = this.hough.a + this.hough.radius;
@@ -208,5 +279,46 @@ public class Calibration : MonoBehaviour
         }
 
         return Util.ToRenderTexture(cropImgTex2D, activeRt);
+    }
+
+    /** Crops the Image "capturedPhoto" and assigns it to "ResultImage"
+     * 
+     */
+    public RenderTexture cropRenderTextureWithGPU()
+    {
+        RenderTexture rtx = RenderTexture.GetTemporary(this.imgWidth, this.imgHeight, 24);
+        Graphics.Blit(this.capturedPhoto.texture, rtx);
+
+        int size = this.hough.radius *2;
+
+        //Coordinates in the original image to start to copy from
+        int startCoordX = this.hough.a - this.hough.radius;
+        if (startCoordX < 0) {
+            startCoordX = 0; 
+        } else if (startCoordX > this.imgWidth){
+            startCoordX = this.imgWidth;
+        }
+
+        int startCoordY = this.hough.b - this.hough.radius;
+        if (startCoordY < 0)
+        {
+            startCoordY = 0;
+        }
+        else if (startCoordY > this.imgHeight)
+        {
+            startCoordY = this.imgHeight;
+        }
+
+        RenderTexture tmpTexture = RenderTexture.GetTemporary(size, size, 24);
+
+        Graphics.CopyTexture(rtx, 0, 0, startCoordX, startCoordY, size, size, tmpTexture, 0, 0, 0, 0);
+        RenderTexture.ReleaseTemporary(rtx);
+
+        rtx = RenderTexture.GetTemporary(size, size, 24);
+        Graphics.Blit(tmpTexture, rtx);
+
+        RenderTexture.ReleaseTemporary(tmpTexture);
+        return rtx;
+
     }
 }

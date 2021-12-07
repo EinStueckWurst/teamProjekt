@@ -105,7 +105,7 @@
                     sqrt(ColXDir.b * ColXDir.b + ColYDir.b * ColYDir.b),
                     1.0
                     );
-                //"Cropp" Image
+ /*               "Cropp" Image*/
                 if (i.uv.x < 0.3f || i.uv.x > 0.7f) {
                     gl_FragColor = float4(0, 0, 0, 1);
                 }
