@@ -6,10 +6,10 @@ using UnityEngine.UI;
 
 public class CameraController : MonoBehaviour
 {
-    [SerializeField] RawImage rawCamDisplay;
-    [SerializeField] RawImage capturedPhotoRaw;
+    [SerializeField] public RawImage rawCamDisplay;
+    [SerializeField] public RawImage capturedPhotoRaw;
 
-    static WebCamTexture cameraObj;
+    public static WebCamTexture camera;
     bool camAvailable = false;
 
     /** Initializes settings for the Camera
@@ -34,19 +34,25 @@ public class CameraController : MonoBehaviour
         {
             var deviceCam = devices[i];
             
-            //Hier später einfach !device.isFrontFacing damit Frontkamera verwendet wird
-            if (deviceCam.isFrontFacing)
+            if (SystemInfo.deviceType == DeviceType.Desktop && deviceCam.isFrontFacing)
             {
                 float aspect = (float)(Screen.width / Screen.height);
-                cameraObj = new WebCamTexture(deviceCam.name, Mathf.FloorToInt(aspect * 400), 400);
+                camera = new WebCamTexture(deviceCam.name, Mathf.FloorToInt( aspect * 1000), 1000);
+                break;
+            }
+            
+            if (SystemInfo.deviceType == DeviceType.Handheld && !deviceCam.isFrontFacing)
+            {
+                float aspect = (float)(Screen.width / Screen.height);
+                camera = new WebCamTexture(deviceCam.name, Mathf.FloorToInt(aspect * 1000), 1000);
                 break;
             }
         }
 
-        if (cameraObj == null) return;
+        if (camera == null) return;
 
-        cameraObj.Play();
-        this.rawCamDisplay.texture = cameraObj;
+        camera.Play();
+        this.rawCamDisplay.texture = camera;
         camAvailable = true;
     }
 
@@ -55,9 +61,9 @@ public class CameraController : MonoBehaviour
      */ 
     public void ActivateCamera()
     {
-        if (cameraObj != null && !cameraObj.isPlaying)
+        if (camera != null && !camera.isPlaying)
         {
-            cameraObj.Play();
+            camera.Play();
             camAvailable = true;
         }
     }
@@ -67,9 +73,9 @@ public class CameraController : MonoBehaviour
      */ 
     public void DeactivateCamera()
     {
-        if (cameraObj != null)
+        if (camera != null)
         {
-            cameraObj.Stop();
+            camera.Stop();
             camAvailable = false;
         }
     }
@@ -79,23 +85,23 @@ public class CameraController : MonoBehaviour
      */ 
     public void TakePhoto()
     {
-        if(camAvailable && cameraObj.isPlaying)
+        if(camAvailable && camera.isPlaying)
         {
             StartCoroutine(this.StartTakingPhotoCoroutine());
+            this.DeactivateCamera();
         }
     }
 
     private IEnumerator StartTakingPhotoCoroutine()
     {
-        this.capturedPhotoRaw.texture = cameraObj;
 
-        //ApplyFilters();
-        //HoughCompute();
+        RenderTexture renderTexture = new RenderTexture(camera.width, camera.height, 1);
+        renderTexture.Create();
+        Graphics.Blit(camera, renderTexture);
 
-        ////Draw Circle around found Point -- for Debug
-        ////Graphics.Blit(sobel, displayCircle, displayCircleMaterialFilter);
+        Texture2D tmp = Util.ToTexture2D(renderTexture, RenderTexture.active);
 
-        this.DeactivateCamera();
+        this.capturedPhotoRaw.texture = Util.ToRenderTexture(Util.ResampleAndCrop(tmp,848, 848), RenderTexture.active);
         yield return new WaitForEndOfFrame();
     }
 }

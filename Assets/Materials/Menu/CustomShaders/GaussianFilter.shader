@@ -2,9 +2,9 @@
 {
     Properties
     {
-        _MainTex ("Texture", 2D) = "white" {}
+        _MainTex("Texture", 2D) = "white" {}
     }
-    SubShader
+        SubShader
     {
         // No culling or depth
         Cull Off ZWrite Off ZTest Always
@@ -34,7 +34,7 @@
 
             float4x4 _KernelGaussianFilter;
 
-            v2f vert (appdata v)
+            v2f vert(appdata v)
             {
                 v2f o;
                 o.vertex = UnityObjectToClipPos(v.vertex);
@@ -49,7 +49,7 @@
                 {
                     for (int x = 0; x < 4; x++)
                     {
-                        res += kernel[3-x][3-y] * pixels[x][y];
+                        res += kernel[3 - x][3 - y] * pixels[x][y];
                     }
                 }
 
@@ -68,22 +68,22 @@
                 }
                 return mat;
             }
-            
-            fixed4 frag (v2f i) : SV_Target
+
+            fixed4 frag(v2f i) : SV_Target
             {
                 //Get PixelData of Size 4x4 for convolution       
-                float4x4 matr = GetData(0, _MainTex, i.uv, _MainTex_TexelSize);           
-                float4x4 matg = GetData(1, _MainTex, i.uv, _MainTex_TexelSize);            
-                float4x4 matb = GetData(2, _MainTex, i.uv, _MainTex_TexelSize);         
+                float4x4 matr = GetData(0, _MainTex, i.uv, _MainTex_TexelSize);
+                float4x4 matg = GetData(1, _MainTex, i.uv, _MainTex_TexelSize);
+                float4x4 matb = GetData(2, _MainTex, i.uv, _MainTex_TexelSize);
 
                 //Convolve with GaussanKernel
-                float4 gl_FragColor = float4(   
+                float4 gl_FragColor = float4(
                     Convolve(_KernelGaussianFilter,matr,1.0,0.0),
                     Convolve(_KernelGaussianFilter,matg,1.0,0.0),
                     Convolve(_KernelGaussianFilter,matb,1.0,0.0),
                     1.0);
 
-        
+
             return gl_FragColor;
             }
             ENDCG

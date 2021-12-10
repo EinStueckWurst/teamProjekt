@@ -7,15 +7,15 @@ using UnityEngine.UI;
 
 public class Calibration : MonoBehaviour
 {
-    [SerializeField] RawImage capturedPhoto;
-    [SerializeField] RawImage resultImg;
+    [SerializeField] public CameraController cameraController;
+    [SerializeField] public RawImage resultImg;
+    [SerializeField] public RawImage capturedPhoto;
 
     RenderTexture unfiltered;
     RenderTexture grayScale;
     RenderTexture gaussianBlurr;
     RenderTexture sobel;
     RenderTexture displayCircle;
-    public RenderTexture houghTransformFilter; // Debugging can be removed
 
     [SerializeField] Material identityMaterialFilter;
     [SerializeField] Material grayscaleMaterialFilter;
@@ -40,10 +40,14 @@ public class Calibration : MonoBehaviour
 
 
 
-    public void Init()
+    private void OnEnable()
    {
-        this.imgWidth = this.capturedPhoto.texture.width;
-        this.imgHeight = this.capturedPhoto.texture.width;
+        this.capturedPhoto.texture = cameraController.capturedPhotoRaw.texture;
+
+        this.imgWidth = this.cameraController.capturedPhotoRaw.texture.width;
+        this.imgHeight = this.cameraController.capturedPhotoRaw.texture.height;
+
+
 
         this.InitializeFilters();
     }
@@ -53,30 +57,25 @@ public class Calibration : MonoBehaviour
      */ 
     void InitializeFilters()
     {
-        unfiltered = new RenderTexture(imgWidth, this.imgHeight, 24);
+        unfiltered = new RenderTexture(imgWidth, this.imgHeight, 1);
         unfiltered.enableRandomWrite = true;
         unfiltered.Create();
 
-        grayScale = new RenderTexture(imgWidth, this.imgHeight, 24);
+        grayScale = new RenderTexture(imgWidth, this.imgHeight, 1);
         grayScale.enableRandomWrite = true;
         grayScale.Create();
 
-        gaussianBlurr = new RenderTexture(imgWidth, imgHeight, 24);
+        gaussianBlurr = new RenderTexture(imgWidth, imgHeight, 1);
         gaussianBlurr.enableRandomWrite = true;
         gaussianBlurr.Create();
 
-        sobel = new RenderTexture(imgWidth, imgHeight, 24);
+        sobel = new RenderTexture(imgWidth, imgHeight, 1);
         sobel.enableRandomWrite = true;
         sobel.Create();
 
-        displayCircle = new RenderTexture(imgWidth, imgHeight, 24);
+        displayCircle = new RenderTexture(imgWidth, imgHeight, 1);
         displayCircle.enableRandomWrite = true;
         displayCircle.Create();
-
-        //Debugging can be removed
-        houghTransformFilter = new RenderTexture(imgWidth, imgHeight, 24);
-        houghTransformFilter.enableRandomWrite = true;
-        houghTransformFilter.Create();
     }
 
     /** Executes the Calibration over the CPU
@@ -116,9 +115,18 @@ public class Calibration : MonoBehaviour
      */
     void ApplyFilters()
     {
+        //Just a Copy
         Graphics.Blit(this.capturedPhoto.texture, unfiltered, identityMaterialFilter);
+
+        //Grayscale
         Graphics.Blit(unfiltered, grayScale, grayscaleMaterialFilter);
+
+        //GaussianBlurr
+        Matrix4x4 gaussKernel = Util.generateGaussKernel();
+        this.gaussianBlurrMaterialFilter.SetMatrix("_KernelGaussianFilter", gaussKernel);
         Graphics.Blit(grayScale, gaussianBlurr, gaussianBlurrMaterialFilter);
+
+        //Sobel
         Graphics.Blit(gaussianBlurr, sobel, sobelMaterialFilter);
     }
 
@@ -131,19 +139,17 @@ public class Calibration : MonoBehaviour
 
         //Select Kernel
         int houghKernel = this.houghComputeShader.FindKernel("CSMain");
-        //Initialize VoteBuffer
-        //Hough Compute Shader
 
+        //Initialize Buffer
         ComputeBuffer voteBuffer = new ComputeBuffer(imgWidth * imgHeight, sizeof(int));
         int[] resultVotes = new int[imgWidth * imgHeight];
 
         for (int rad = minRad; rad < maxRad; rad++)
         {
-            //Clears VoteBuffer
+            //Clear VoteBuffer
             voteBuffer.SetData(new int[imgWidth * imgHeight]);
 
             //Assign Properties 
-            this.houghComputeShader.SetTexture(houghKernel, "_Result", this.houghTransformFilter); //Debuggingg can be removed
 
             this.houghComputeShader.SetTexture(houghKernel, "_InputTexture", this.sobel);
             this.houghComputeShader.SetBuffer(houghKernel, "_VoteBuffer", voteBuffer);
@@ -153,8 +159,6 @@ public class Calibration : MonoBehaviour
             this.houghComputeShader.SetInt("_Radius", rad);
             this.houghComputeShader.SetFloat("_Threshold", threshHold);
 
-            //X = 8
-            //Y = 8
             this.houghComputeShader.Dispatch(houghKernel, imgWidth/8, imgHeight/8, 1);
 
             //Extracts the Calculated Votebuffer and takes the highest Value
@@ -162,10 +166,8 @@ public class Calibration : MonoBehaviour
             voteBuffer.GetData(resultVotes);
             int currentMaxVal = resultVotes.Max();
 
-            //always take the bigger val
             if (currentMaxVal > this.hough.maxVal)
             {
-                //this.capturedPhoto.texture = houghTransformFilter; //For Debugging can be removed
                 this.hough.maxVal = currentMaxVal;
                 int indx = Array.IndexOf(resultVotes, currentMaxVal);
 
@@ -174,9 +176,7 @@ public class Calibration : MonoBehaviour
                 this.hough.radius = rad;
             }
         }
-
         voteBuffer.Dispose();
-
     }
 
     void HoughComputeCPU()
@@ -286,7 +286,7 @@ public class Calibration : MonoBehaviour
      */
     public RenderTexture cropRenderTextureWithGPU()
     {
-        RenderTexture rtx = RenderTexture.GetTemporary(this.imgWidth, this.imgHeight, 24);
+        RenderTexture rtx = RenderTexture.GetTemporary(this.imgWidth, this.imgHeight, 1);
         Graphics.Blit(this.capturedPhoto.texture, rtx);
 
         int size = this.hough.radius *2;
@@ -309,12 +309,12 @@ public class Calibration : MonoBehaviour
             startCoordY = this.imgHeight;
         }
 
-        RenderTexture tmpTexture = RenderTexture.GetTemporary(size, size, 24);
+        RenderTexture tmpTexture = RenderTexture.GetTemporary(size, size, 1);
 
         Graphics.CopyTexture(rtx, 0, 0, startCoordX, startCoordY, size, size, tmpTexture, 0, 0, 0, 0);
         RenderTexture.ReleaseTemporary(rtx);
 
-        rtx = RenderTexture.GetTemporary(size, size, 24);
+        rtx = RenderTexture.GetTemporary(size, size, 1);
         Graphics.Blit(tmpTexture, rtx);
 
         RenderTexture.ReleaseTemporary(tmpTexture);
