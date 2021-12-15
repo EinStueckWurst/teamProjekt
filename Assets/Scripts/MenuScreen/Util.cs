@@ -37,7 +37,7 @@ public static class Util
 
     /** transforms a Texture to a RenderTexture
      * 
-     */ 
+     */
     public static RenderTexture fromTextureToRenderTexture(Texture texture)
     {
         RenderTexture renderTexture = new RenderTexture(texture.width, texture.height, 24);
@@ -48,8 +48,8 @@ public static class Util
 
     /** transforms a Texture to a Texture2D
      * 
-     */ 
-    public static Texture2D fromTextureToTexture2D (Texture texture)
+     */
+    public static Texture2D fromTextureToTexture2D(Texture texture)
     {
         Texture2D texture2D = new Texture2D(texture.width, texture.height);
 

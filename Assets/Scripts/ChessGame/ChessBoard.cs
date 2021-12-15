@@ -5,112 +5,24 @@ using UnityEngine;
 
 public class ChessBoard : MonoBehaviour
 {
-    [SerializeField] private Material tileMaterial;
-    [SerializeField] private Material hoverMaterial;
+    [SerializeField] public Material tileMaterial;
+    [SerializeField] public Material hoverMaterial;
 
-    [SerializeField] Camera currentCamera;
-    //Logic
-    private const int TILE_COUNTX = 8;
-    private const int TILE_COUNTY = 8;
-    private GameObject[,] tiles;
+    public int TILE_COUNT_X = 8;
+    public int TILE_COUNT_Y = 8;
+    public float yOffset = 0.0006644645f;
+    public GameObject[,] tiles;
     //private Camera currentCamera;
-    private Vector2Int currentHover;
 
     #region Unity Builtin Methods
     void Awake()
     {
-        this.generateGrid(1, TILE_COUNTX, TILE_COUNTY);
+        this.generateGrid(1, TILE_COUNT_X, TILE_COUNT_Y);
     }
 
-    void Update()
-    {
-        if(!currentCamera)
-        {
-            currentCamera = Camera.main;
-            return;
-        }
-
-        Ray ray = new Ray();
-        switch (SystemInfo.deviceType)
-        {
-            case DeviceType.Unknown:
-                break;
-            case DeviceType.Handheld:
-                ray = currentCamera.ScreenPointToRay(Input.GetTouch(0).position);
-                break;
-            case DeviceType.Console:
-                break;
-            case DeviceType.Desktop:
-                ray = currentCamera.ScreenPointToRay(Input.mousePosition);
-                break;
-            default:
-                break;
-        }
-
-        this.handleInputsTransitions(ray);
-    }
     #endregion
 
-    /** Handles selection of Transitions for Mouse
-     * 
-     */
-    private void handleInputsTransitions(Ray ray)
-    {
-        RaycastHit info;
-
-        if (Physics.Raycast(ray, out info, 100, LayerMask.GetMask("Tile")))
-        {
-            Vector2Int hitPos = this.lookupTileIndex(info);
-
-            //Transition from not hovering to hover
-            if (currentHover == -Vector2Int.one)
-            {
-                currentHover = hitPos;
-                tiles[currentHover.x, currentHover.y].GetComponent<Renderer>().sharedMaterial = this.hoverMaterial;
-            }
-
-            //Transition from Hovering one tile to the next one
-            if (currentHover != hitPos)
-            {
-                //On Leave
-                tiles[currentHover.x, currentHover.y].GetComponent<Renderer>().sharedMaterial = this.tileMaterial;
-                currentHover = hitPos;
-                //OnEnter
-                tiles[currentHover.x, currentHover.y].GetComponent<Renderer>().sharedMaterial = this.hoverMaterial;
-            }
-        }
-        else
-        {
-            if (currentHover != -Vector2Int.one)
-            {
-                //On Leave
-                tiles[currentHover.x, currentHover.y].GetComponent<Renderer>().sharedMaterial = this.tileMaterial;
-                currentHover = -Vector2Int.one;
-            }
-        }
-    }
-
-    /** Gets the tileindex that is being hit by the ray
-     * 
-     */
-    private Vector2Int lookupTileIndex(RaycastHit hitInfo)
-    {
-        GameObject tile = hitInfo.transform.gameObject;
-
-        for (int x = 0; x < TILE_COUNTX; x++)
-        {
-            for (int y = 0; y < TILE_COUNTY; y++)
-            {
-                if (tiles[x, y] == tile)
-                {
-                    return new Vector2Int(x, y);
-                }
-            }
-        }
-        return -Vector2Int.one;
-    }
-
-    #region generateBoard Methods
+    #region generateBoard
     /** Generates A tile Grid
      * 
      */
@@ -145,7 +57,6 @@ public class ChessBoard : MonoBehaviour
         vertices[2] = new Vector3((x+1) * tileSize, 0, y * tileSize);
         vertices[3] = new Vector3((x+1) * tileSize, 0, (y+1) * tileSize);
 
-        //TODO
         int[] quadTri = new int[] { 0, 1, 2, 1, 3, 2 };
 
         mesh.vertices = vertices;
@@ -159,4 +70,23 @@ public class ChessBoard : MonoBehaviour
     }
     #endregion
 
+    /** Gets the tileindex that is being hit by the ray
+     * 
+     */
+    public Vector2Int lookupTileIndex(RaycastHit hitInfo)
+    {
+        GameObject tile = hitInfo.transform.gameObject;
+
+        for (int x = 0; x < TILE_COUNT_X; x++)
+        {
+            for (int y = 0; y < TILE_COUNT_Y; y++)
+            {
+                if (tiles[x, y] == tile)
+                {
+                    return new Vector2Int(x, y);
+                }
+            }
+        }
+        return -Vector2Int.one;
+    }
 }
