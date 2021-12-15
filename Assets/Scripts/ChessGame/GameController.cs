@@ -156,7 +156,7 @@ public class GameController : MonoBehaviour
         //Letting Go of the ChessPiece
         if (this.currentlyDraggingChessPiece != null && Input.GetMouseButtonUp(0))
         {
-            Vector3 previousPosition = this.floorToIntVector3(this.currentlyDraggingChessPiece.currentPosition);
+            Vector3 previousPosition =ChessGameUtil.floorToIntVector3(this.currentlyDraggingChessPiece.currentPosition);
             bool validMove = this.moveTo(this.currentlyDraggingChessPiece, hitPos, previousPosition);
             this.removeHighlightTiles();
             if (!validMove)
@@ -350,7 +350,7 @@ public class GameController : MonoBehaviour
      */ 
     private void moveChessPieceBack()
     {
-        Vector3 previousPosition = this.floorToIntVector3(currentlyDraggingChessPiece.currentPosition);
+        Vector3 previousPosition = ChessGameUtil.floorToIntVector3(currentlyDraggingChessPiece.currentPosition);
         currentlyDraggingChessPiece.SetPosition(previousPosition);
         currentlyDraggingChessPiece = null;
     }
@@ -363,15 +363,5 @@ public class GameController : MonoBehaviour
         Vector3 newPos = new Vector3(x, 0, y);
         this.chessPiecesMap[x, y].currentPosition = newPos;
         this.chessPiecesMap[x, y].SetPosition(newPos);
-    }
-
-    /** Returns floored xy Coordinates for chess Pieces
-     * 
-     */ 
-    Vector3 floorToIntVector3(Vector3 vec3)
-    {
-        int x = Mathf.FloorToInt(vec3.x);
-        int y = Mathf.FloorToInt(vec3.z);
-        return new Vector3(x, 0, y);
     }
 }

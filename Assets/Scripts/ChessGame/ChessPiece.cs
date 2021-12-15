@@ -75,7 +75,7 @@ public class ChessPiece : MonoBehaviour
         this.desiredScale = newScale;
     }
 
-    public List<Vector2Int> GetPossibleMoves(ref ChessPiece[,] chessPieceMap, int tileCountX, int tileCountY)
+    public virtual List<Vector2Int> GetPossibleMoves(ref ChessPiece[,] chessPieceMap, int tileCountX, int tileCountY)
     {
         List<Vector2Int> possibleMoves = new List<Vector2Int>();
 
