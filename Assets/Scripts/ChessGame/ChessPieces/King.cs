@@ -11,9 +11,10 @@ public class King : ChessPiece
         //Go up if you are White otherwise go down
         int direction = (this.team == Team.BLACK) ? 1 : -1;
 
-        //1 forward
+
         Vector2Int currentPos = ChessGameUtil.floorToIntVector2Int(this.currentPosition);
 
+        //1 forward
         if (currentPos.y != (tileCountY-1)
             && (chessPieceMap[currentPos.x, currentPos.y + direction] == null || chessPieceMap[currentPos.x, currentPos.y + direction].team != this.team)
             )
