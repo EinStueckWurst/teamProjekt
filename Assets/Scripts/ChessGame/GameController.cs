@@ -25,6 +25,7 @@ public class GameController : MonoBehaviour
     private List<ChessPiece> deadBlackPieces = new List<ChessPiece>();
 
     private ChessPiece currentlyDraggingChessPiece;
+    private List<Vector2Int> possibleMoves;
 
     #region UnityBuiltinFunctions
     private void Awake()
@@ -101,7 +102,7 @@ public class GameController : MonoBehaviour
     {
         RaycastHit info;
 
-        if (Physics.Raycast(ray, out info, 100, LayerMask.GetMask("Tile")))
+        if (Physics.Raycast(ray, out info, 100))
         {
             this.whithinBoardHandler(info);
         }
@@ -118,20 +119,22 @@ public class GameController : MonoBehaviour
     {
         Vector2Int hitPos = chessBoard.lookupTileIndex(info);
 
-        //Transition from not hovering to hover
+        //Transition from not hovering at all --> to hovering one Tile
         if (this.currentHover == -Vector2Int.one)
         {
             this.currentHover = hitPos;
-            this.chessBoard.tiles[this.currentHover.x, this.currentHover.y].GetComponent<Renderer>().sharedMaterial = chessBoard.hoverMaterial;
+
+            this.onEnterTile(this.currentHover.x, this.currentHover.y);
+
         }
-        //Transition from Hovering one tile to the next one
+        //Transition from Hovering one tile --> to the next tile
         if (this.currentHover != hitPos)
         {
-            //On Leave
-            this.chessBoard.tiles[this.currentHover.x, this.currentHover.y].GetComponent<Renderer>().sharedMaterial = this.chessBoard.tileMaterial;
+            //On Leave A Tile
+            this.onLeaveTile(this.currentHover.x, this.currentHover.y);
             this.currentHover = hitPos;
-            //OnEnter
-            this.chessBoard.tiles[this.currentHover.x, this.currentHover.y].GetComponent<Renderer>().sharedMaterial = this.chessBoard.hoverMaterial;
+            //OnEnter A Tile
+            this.onEnterTile(this.currentHover.x, this.currentHover.y);
         }
 
         //Selectiong ChessPiece
@@ -144,6 +147,9 @@ public class GameController : MonoBehaviour
                 if (isMyTurn)
                 {
                     this.currentlyDraggingChessPiece = this.chessPiecesMap[hitPos.x, hitPos.y];
+
+                    this.possibleMoves = this.currentlyDraggingChessPiece.GetPossibleMoves(ref this.chessPiecesMap, X_Size, Y_Size);
+                    this.highlightTiles();
                 }
             }
         }
@@ -152,7 +158,7 @@ public class GameController : MonoBehaviour
         {
             Vector3 previousPosition = this.floorToIntVector3(this.currentlyDraggingChessPiece.currentPosition);
             bool validMove = this.moveTo(this.currentlyDraggingChessPiece, hitPos, previousPosition);
-
+            this.removeHighlightTiles();
             if (!validMove)
             {
                 this.moveChessPieceBack();
@@ -164,6 +170,58 @@ public class GameController : MonoBehaviour
         }
     }
 
+    /** Triggers on entering a tile at x,y position
+     * 
+     */ 
+    private void onEnterTile(int x, int y)
+    {
+        this.chessBoard.tiles[x,y].GetComponent<Renderer>().sharedMaterial = this.chessBoard.hoverMaterial;
+    }
+
+    /** Triggers on leaving a tile at x,y position
+     * 
+     */
+    private void onLeaveTile(int x, int y)
+    {
+        bool isAPossibleMoveTile = this.validateMove(this.possibleMoves, new Vector2Int(x, y));
+
+        if(isAPossibleMoveTile)
+        {
+            this.chessBoard.tiles[x, y].GetComponent<Renderer>().sharedMaterial = chessBoard.possibleMoveMaterial;
+        }
+        else
+        {
+            this.chessBoard.tiles[x, y].GetComponent<Renderer>().sharedMaterial = this.chessBoard.tileMaterial;
+        }
+    }
+
+    /** Highlights the possible moves
+     * 
+     */ 
+    private void highlightTiles()
+    {
+        for (int i = 0; i < this.possibleMoves.Count; i++)
+        {
+            int x = this.possibleMoves[i].x;
+            int y = this.possibleMoves[i].y;
+            this.chessBoard.tiles[x,y].GetComponent<Renderer>().sharedMaterial = chessBoard.possibleMoveMaterial;
+        }
+    }
+
+    /** Unhighlights the possible moves
+     * 
+     */
+    private void removeHighlightTiles()
+    {
+        for (int i = 0; i < this.possibleMoves.Count; i++)
+        {
+            int x = this.possibleMoves[i].x;
+            int y = this.possibleMoves[i].y;
+            this.chessBoard.tiles[x,y].GetComponent<Renderer>().sharedMaterial = chessBoard.tileMaterial;
+        }
+        this.possibleMoves.Clear();
+    }
+
     /** Handles Logic if mouse is outside the boards bounds
      * 
      */
@@ -171,14 +229,14 @@ public class GameController : MonoBehaviour
     {
         if (this.currentHover != -Vector2Int.one)
         {
-            //On Leave
-            this.chessBoard.tiles[this.currentHover.x, this.currentHover.y].GetComponent<Renderer>().sharedMaterial = this.chessBoard.tileMaterial;
+            this.onLeaveTile(this.currentHover.x, this.currentHover.y);
             this.currentHover = -Vector2Int.one;
         }
 
         if (this.currentlyDraggingChessPiece && Input.GetMouseButtonUp(0))
         {
             this.moveChessPieceBack();
+            this.removeHighlightTiles();
         }
     }
 
@@ -204,11 +262,18 @@ public class GameController : MonoBehaviour
      */
     private bool moveTo(ChessPiece draggingChessPiece, Vector2Int hitPos, Vector3 prevPos)
     {
-        //Another Piece is on hitPos
+        //If move not valid --> abort
+        if (!this.validateMove(this.possibleMoves, hitPos))
+        {
+            return false;
+        }
+
+        //selecting a tile with another chesspiece on it
         if (this.chessPiecesMap[hitPos.x, hitPos.y] != null)
         {
-            ChessPiece otherChessPiece = this.chessPiecesMap[hitPos.x, hitPos.y]; 
-            if(otherChessPiece.team == draggingChessPiece.team)
+            ChessPiece otherChessPiece = this.chessPiecesMap[hitPos.x, hitPos.y];
+
+            if (otherChessPiece.team == draggingChessPiece.team)
             {
                 return false;
             }
@@ -223,6 +288,25 @@ public class GameController : MonoBehaviour
         chessPiecesMap[(int)prevPos.x, (int)prevPos.z] = null;
         this.moveChessPiece(hitPos.x, hitPos.y);
         return true;
+    }
+
+    /** Checks wether the newly selcted position (move) is a valid move
+     * 
+     */ 
+    private bool validateMove(List<Vector2Int> validMoves, Vector2Int newPos)
+    {
+        if(newPos != null && validMoves != null)
+        {
+            for (int i = 0; i < validMoves.Count; i++)
+            {
+                if(validMoves[i].x == newPos.x && validMoves[i].y == newPos.y)
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     /** Sends the OtherChessPiece to the graveyard

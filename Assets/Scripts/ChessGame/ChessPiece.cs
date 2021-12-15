@@ -74,4 +74,16 @@ public class ChessPiece : MonoBehaviour
         Vector3 newScale = Vector3.one * scale;
         this.desiredScale = newScale;
     }
+
+    public List<Vector2Int> GetPossibleMoves(ref ChessPiece[,] chessPieceMap, int tileCountX, int tileCountY)
+    {
+        List<Vector2Int> possibleMoves = new List<Vector2Int>();
+
+        possibleMoves.Add(new Vector2Int(3, 3));
+        possibleMoves.Add(new Vector2Int(3, 4));
+        possibleMoves.Add(new Vector2Int(4, 3));
+        possibleMoves.Add(new Vector2Int(4, 4));
+
+        return possibleMoves;
+    }
 }

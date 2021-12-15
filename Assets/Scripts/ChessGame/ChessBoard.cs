@@ -7,6 +7,7 @@ public class ChessBoard : MonoBehaviour
 {
     [SerializeField] public Material tileMaterial;
     [SerializeField] public Material hoverMaterial;
+    [SerializeField] public Material possibleMoveMaterial;
 
     public int TILE_COUNT_X = 8;
     public int TILE_COUNT_Y = 8;
@@ -63,7 +64,6 @@ public class ChessBoard : MonoBehaviour
         mesh.triangles = quadTri;
         mesh.RecalculateNormals();
 
-        tileObj.layer = LayerMask.NameToLayer("Tile"); 
         tileObj.AddComponent<BoxCollider>();
 
         return tileObj;
