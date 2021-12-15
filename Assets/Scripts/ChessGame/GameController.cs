@@ -27,6 +27,8 @@ public class GameController : MonoBehaviour
     private ChessPiece currentlyDraggingChessPiece;
     private List<Vector2Int> possibleMoves;
 
+    private bool isWhiteTurn = true;
+
     #region UnityBuiltinFunctions
     private void Awake()
     {
@@ -142,14 +144,19 @@ public class GameController : MonoBehaviour
         {
             if (this.chessPiecesMap[hitPos.x, hitPos.y] != null)
             {
-                //Check Turn
-                bool isMyTurn = true;
-                if (isMyTurn)
+                if (this.chessPiecesMap[hitPos.x, hitPos.y].team == Team.WHITE && this.isWhiteTurn)
                 {
                     this.currentlyDraggingChessPiece = this.chessPiecesMap[hitPos.x, hitPos.y];
-
                     this.possibleMoves = this.currentlyDraggingChessPiece.GetPossibleMoves(ref this.chessPiecesMap, X_Size, Y_Size);
                     this.highlightTiles();
+                }
+                
+                if (this.chessPiecesMap[hitPos.x, hitPos.y].team == Team.BLACK && !this.isWhiteTurn)
+                {
+                    this.currentlyDraggingChessPiece = this.chessPiecesMap[hitPos.x, hitPos.y];
+                    this.possibleMoves = this.currentlyDraggingChessPiece.GetPossibleMoves(ref this.chessPiecesMap, X_Size, Y_Size);
+                    this.highlightTiles();
+                
                 }
             }
         }
@@ -287,6 +294,8 @@ public class GameController : MonoBehaviour
         chessPiecesMap[hitPos.x, hitPos.y] = draggingChessPiece;
         chessPiecesMap[(int)prevPos.x, (int)prevPos.z] = null;
         this.moveChessPiece(hitPos.x, hitPos.y);
+
+        this.isWhiteTurn = !this.isWhiteTurn;
         return true;
     }
 
@@ -315,6 +324,12 @@ public class GameController : MonoBehaviour
     private void killOponent(ChessPiece otherChessPiece)
     {
         float yDeathOffset = 0.25709f;
+
+        if(otherChessPiece.type == ChessPieceType.KING)
+        {
+            this.checkMate(otherChessPiece.team);
+        }
+
         //If Enemy Is Being Killed
         if (otherChessPiece.team == Team.BLACK)
         {
@@ -345,9 +360,14 @@ public class GameController : MonoBehaviour
         }
     }
 
+    private void checkMate(Team team)
+    {
+        Debug.Log("CheckMate for " + team.ToString());
+    }
+
     /** Moves the chess piece back to its previous position
      * 
-     */ 
+     */
     private void moveChessPieceBack()
     {
         Vector3 previousPosition = ChessGameUtil.floorToIntVector3(currentlyDraggingChessPiece.currentPosition);
