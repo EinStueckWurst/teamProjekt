@@ -8,26 +8,22 @@ public class King : ChessPiece
     {
         List<Vector2Int> possibleMoves = new List<Vector2Int>();
 
-        //Go up if you are White otherwise go down
-        int direction = (this.team == Team.BLACK) ? 1 : -1;
-
-
         Vector2Int currentPos = ChessGameUtil.floorToIntVector2Int(this.currentPosition);
 
         //1 forward
         if (currentPos.y != (tileCountY-1)
-            && (chessPieceMap[currentPos.x, currentPos.y + direction] == null || chessPieceMap[currentPos.x, currentPos.y + direction].team != this.team)
+            && (chessPieceMap[currentPos.x, currentPos.y +1] == null || chessPieceMap[currentPos.x, currentPos.y +1].team != this.team)
             )
         {
-            possibleMoves.Add(new Vector2Int(currentPos.x, currentPos.y + direction));
+            possibleMoves.Add(new Vector2Int(currentPos.x, currentPos.y +1));
         }
 
         //1 back
         if (currentPos.y != 0 
-            && (chessPieceMap[currentPos.x, currentPos.y - direction] == null || chessPieceMap[currentPos.x, currentPos.y - direction].team != this.team)
+            && (chessPieceMap[currentPos.x, currentPos.y -1] == null || chessPieceMap[currentPos.x, currentPos.y -1].team != this.team)
             )
         {
-            possibleMoves.Add(new Vector2Int(currentPos.x, currentPos.y - direction));
+            possibleMoves.Add(new Vector2Int(currentPos.x, currentPos.y -1));
         }
 
         //1 left
@@ -49,37 +45,37 @@ public class King : ChessPiece
         //1 left-front
         if (currentPos.y != (tileCountY - 1)
             && currentPos.x != (tileCountX - 1)
-            && (chessPieceMap[currentPos.x +1, currentPos.y + direction] == null || chessPieceMap[currentPos.x + 1, currentPos.y + direction].team != this.team)
+            && (chessPieceMap[currentPos.x +1, currentPos.y + 1] == null || chessPieceMap[currentPos.x + 1, currentPos.y + 1].team != this.team)
             )
         {
-            possibleMoves.Add(new Vector2Int(currentPos.x + 1, currentPos.y + direction));
+            possibleMoves.Add(new Vector2Int(currentPos.x + 1, currentPos.y + 1));
         }
         
         //1 right-front
         if (currentPos.y != (tileCountY - 1)
             && currentPos.x != 0
-            && (chessPieceMap[currentPos.x - 1, currentPos.y + direction] == null ||  chessPieceMap[currentPos.x - 1, currentPos.y + direction].team != this.team)
+            && (chessPieceMap[currentPos.x - 1, currentPos.y + 1] == null ||  chessPieceMap[currentPos.x - 1, currentPos.y +1].team != this.team)
             )
         {
-            possibleMoves.Add(new Vector2Int(currentPos.x - 1, currentPos.y + direction));
+            possibleMoves.Add(new Vector2Int(currentPos.x - 1, currentPos.y +1));
         }
         
         //1 left-back
         if (currentPos.y != 0 
             && currentPos.x != (tileCountX - 1)
-            && (chessPieceMap[currentPos.x + 1, currentPos.y - direction] == null || chessPieceMap[currentPos.x + 1, currentPos.y - direction].team != this.team)
+            && (chessPieceMap[currentPos.x + 1, currentPos.y -1] == null || chessPieceMap[currentPos.x + 1, currentPos.y -1].team != this.team)
             )
         {
-            possibleMoves.Add(new Vector2Int(currentPos.x + 1, currentPos.y - direction));
+            possibleMoves.Add(new Vector2Int(currentPos.x + 1, currentPos.y -1));
         }
         
         //1 right-back
         if (currentPos.y != 0 
             && currentPos.x != 0
-            && (chessPieceMap[currentPos.x - 1, currentPos.y - direction] == null || chessPieceMap[currentPos.x - 1, currentPos.y - direction].team != this.team)
+            && (chessPieceMap[currentPos.x - 1, currentPos.y -1] == null || chessPieceMap[currentPos.x - 1, currentPos.y -1].team != this.team)
             )
         {
-            possibleMoves.Add(new Vector2Int(currentPos.x - 1, currentPos.y - direction));
+            possibleMoves.Add(new Vector2Int(currentPos.x - 1, currentPos.y -1));
         }
         
         return possibleMoves;

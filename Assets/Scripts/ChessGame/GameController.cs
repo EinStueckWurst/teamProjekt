@@ -1,11 +1,14 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 
 public class GameController : MonoBehaviour
 {
     [SerializeField] Camera currentCamera;
+    [SerializeField] GameObject victoryScreen;
+    [SerializeField] TextMeshProUGUI winningText;
 
     [Header("BoardSetup")]
     [SerializeField] ChessBoard chessBoard;
@@ -362,7 +365,23 @@ public class GameController : MonoBehaviour
 
     private void checkMate(Team team)
     {
-        Debug.Log("CheckMate for " + team.ToString());
+        this.displayVictory(team);
+    }
+
+    private void displayVictory(Team team)
+    {
+        this.winningText.SetText(team.ToString() + " WINS");
+        this.victoryScreen.SetActive(true);
+    }
+
+    public void onResetButton()
+    {
+
+    }
+    
+    public void onQuitButton()
+    {
+        Application.Quit();
     }
 
     /** Moves the chess piece back to its previous position
