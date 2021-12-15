@@ -24,6 +24,7 @@ public class ChessPiece : MonoBehaviour
     public Team team;
     public ChessPieceType type;
 
+    public Vector3 originalPosition;
     public Vector3 currentPosition;
     public Vector3 currentLocalScale;
 
@@ -33,7 +34,9 @@ public class ChessPiece : MonoBehaviour
     #region Unity Builtin Methods
     void Awake()
     {
-        this.currentPosition = new Vector3(transform.position.x,0, transform.position.z);
+        this.originalPosition = new Vector3(transform.position.x, 0, transform.position.z);
+
+        this.currentPosition = this.originalPosition;
         this.desiredPosition = this.currentPosition;
 
         this.currentLocalScale = this.transform.localScale;

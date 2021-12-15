@@ -376,7 +376,21 @@ public class GameController : MonoBehaviour
 
     public void onResetButton()
     {
-
+        this.victoryScreen.SetActive(false);
+        this.mapChessPieces();
+        for (int x = 0; x < X_Size; x++)
+        {
+            for (int y = 0; y < Y_Size; y++)
+            {
+                if(this.chessPiecesMap[x,y] != null)
+                {
+                    Vector3 floored = ChessGameUtil.floorToIntVector3(this.chessPiecesMap[x, y].originalPosition);
+                    this.chessPiecesMap[x, y].currentPosition = this.chessPiecesMap[x, y].originalPosition;
+                    this.chessPiecesMap[x, y].SetPosition(floored);
+                    this.chessPiecesMap[x, y].SetScale(1);
+                }
+            }
+        }
     }
     
     public void onQuitButton()
