@@ -11,9 +11,10 @@ public class Pawn : ChessPiece
         //Go up if you are White otherwise go down
         int direction = (this.team == Team.BLACK) ? 1 : -1;
 
-        //1 forward
-        Vector2Int currentPos = ChessGameUtil.floorToIntVector2Int(this.currentPosition);
 
+        Vector2Int currentPos = ChessGameUtil.floorToIntVector2Int(this.currentPosition);
+        
+        //1 forward
         if (chessPieceMap[currentPos.x, currentPos.y + direction] == null)
         {
             possibleMoves.Add(new Vector2Int(currentPos.x, currentPos.y + direction));
@@ -22,7 +23,6 @@ public class Pawn : ChessPiece
         //2 forward
         if (chessPieceMap[currentPos.x, currentPos.y + direction] == null)
         {
-            possibleMoves.Add(currentPos);
             if( this.team == Team.WHITE 
                 && currentPos.y == (tileCountY-2) 
                 && chessPieceMap[currentPos.x, currentPos.y + direction *2] == null
@@ -60,5 +60,20 @@ public class Pawn : ChessPiece
             }
         }
         return possibleMoves; 
+    }
+
+    public override SpecialMove GetSpecialMoves(ref ChessPiece[,] chessPieceMap, ref List<Vector2Int[]> moveList, ref List<Vector2Int> possibleMoves)
+    {
+        SpecialMove specialMove = SpecialMove.NONE;
+        Vector2Int currentPos = ChessGameUtil.floorToIntVector2Int(this.currentPosition);
+
+        int direction = (this.team == Team.BLACK) ? 1 : -1;
+
+        if(this.team == Team.BLACK && currentPos.y == 6 || this.team == Team.WHITE && currentPos.y == 1)
+        {
+            return SpecialMove.PROMOTION;
+        }
+
+        return specialMove;
     }
 }

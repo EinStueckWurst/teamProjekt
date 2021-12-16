@@ -4,16 +4,27 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 
+
+public enum SpecialMove
+{
+    NONE,
+    CASTLING,
+    PROMOTION,
+}
+
 public class GameController : MonoBehaviour
 {
     [SerializeField] Camera currentCamera;
     [SerializeField] GameObject victoryScreen;
     [SerializeField] TextMeshProUGUI winningText;
-
+    
     [Header("BoardSetup")]
     [SerializeField] ChessBoard chessBoard;
 
     [Header("ChessPieces Setup")]
+    [SerializeField] GameObject spawnBlackQueenForPawnPromotion;
+    [SerializeField] GameObject spawnWhiteQueenForPawnPromotion;
+
     [SerializeField] GameObject[] blackMainChessPieces;
     [SerializeField] GameObject[] blackPawns;
     [SerializeField] GameObject[] whiteMainChessPieces;
@@ -26,11 +37,14 @@ public class GameController : MonoBehaviour
     private ChessPiece[,] chessPiecesMap;
     private List<ChessPiece> deadWhitePieces = new List<ChessPiece>();
     private List<ChessPiece> deadBlackPieces = new List<ChessPiece>();
+    private List<ChessPiece> spawnedQueens = new List<ChessPiece>();
 
     private ChessPiece currentlyDraggingChessPiece;
     private List<Vector2Int> possibleMoves;
 
     private bool isWhiteTurn = true;
+    private SpecialMove specialMove; 
+    private List<Vector2Int[]> moveList = new List<Vector2Int[]>();
 
     #region UnityBuiltinFunctions
     private void Awake()
@@ -151,16 +165,22 @@ public class GameController : MonoBehaviour
                 {
                     this.currentlyDraggingChessPiece = this.chessPiecesMap[hitPos.x, hitPos.y];
                     this.possibleMoves = this.currentlyDraggingChessPiece.GetPossibleMoves(ref this.chessPiecesMap, X_Size, Y_Size);
+                    this.specialMove = currentlyDraggingChessPiece.GetSpecialMoves(ref this.chessPiecesMap, ref this.moveList, ref this.possibleMoves);
                     this.highlightTiles();
                 }
-                
+
                 if (this.chessPiecesMap[hitPos.x, hitPos.y].team == Team.BLACK && !this.isWhiteTurn)
                 {
                     this.currentlyDraggingChessPiece = this.chessPiecesMap[hitPos.x, hitPos.y];
                     this.possibleMoves = this.currentlyDraggingChessPiece.GetPossibleMoves(ref this.chessPiecesMap, X_Size, Y_Size);
+                    this.specialMove = currentlyDraggingChessPiece.GetSpecialMoves(ref this.chessPiecesMap, ref this.moveList, ref this.possibleMoves);
                     this.highlightTiles();
-                
                 }
+
+                //this.currentlyDraggingChessPiece = this.chessPiecesMap[hitPos.x, hitPos.y];
+                //this.possibleMoves = this.currentlyDraggingChessPiece.GetPossibleMoves(ref this.chessPiecesMap, X_Size, Y_Size);
+                //this.specialMove = currentlyDraggingChessPiece.GetSpecialMoves(ref this.chessPiecesMap, ref this.moveList, ref this.possibleMoves);
+                //this.highlightTiles();
             }
         }
         //Letting Go of the ChessPiece
@@ -299,12 +319,105 @@ public class GameController : MonoBehaviour
         this.moveChessPiece(hitPos.x, hitPos.y);
 
         this.isWhiteTurn = !this.isWhiteTurn;
+        Vector2Int prevPosVec2 = ChessGameUtil.floorToIntVector2Int(prevPos);
+
+        //Tracking every move 
+        this.moveList.Add(new Vector2Int[] { prevPosVec2, new Vector2Int(hitPos.x, hitPos.y) });
+
+        this.handleSpecialMove();
+
         return true;
+    }
+
+    private void handleSpecialMove()
+    {
+        switch (this.specialMove)
+        {
+            case SpecialMove.NONE:
+                break;
+            case SpecialMove.CASTLING:
+                this.handleCastlingMove();
+                break;
+            case SpecialMove.PROMOTION:
+                this.handlePromotionMove();
+                break;
+            default:
+                break;
+        }
+    }
+
+    private void handlePromotionMove()
+    {
+        Vector2Int[] lastMove = this.moveList[this.moveList.Count - 1];
+        ChessPiece pawn = this.chessPiecesMap[lastMove[1].x, lastMove[1].y];
+
+        if(pawn.type == ChessPieceType.PAWN)
+        {
+            if(pawn.team == Team.BLACK && lastMove[1].y == 7)
+            {
+                GameObject blackQueenObj= Instantiate(spawnBlackQueenForPawnPromotion, this.spawnBlackQueenForPawnPromotion.transform.parent.transform);
+                ChessPiece newBlackQueen = blackQueenObj.GetComponent<ChessPiece>();
+                this.spawnedQueens.Add(newBlackQueen);
+                this.killOponent(this.chessPiecesMap[lastMove[1].x, lastMove[1].y]);
+                this.chessPiecesMap[lastMove[1].x, lastMove[1].y] = newBlackQueen;
+                this.moveChessPiece(lastMove[1].x, lastMove[1].y);
+            }
+            
+            if(pawn.team == Team.WHITE && lastMove[1].y == 0)
+            {
+                GameObject blackQueenObj= Instantiate(spawnWhiteQueenForPawnPromotion, this.spawnWhiteQueenForPawnPromotion.transform.parent.transform);
+                ChessPiece newWhiteQueen = blackQueenObj.GetComponent<ChessPiece>();
+                this.spawnedQueens.Add(newWhiteQueen);
+                this.killOponent(this.chessPiecesMap[lastMove[1].x, lastMove[1].y]);
+                this.chessPiecesMap[lastMove[1].x, lastMove[1].y] = newWhiteQueen;
+                this.moveChessPiece(lastMove[1].x, lastMove[1].y);
+            }
+        }
+    }
+
+    private void handleCastlingMove()
+    {
+        Vector2Int[] lastMove = this.moveList[moveList.Count - 1];
+
+        if(lastMove[1].x == 1)
+        {
+            if(lastMove[1].y == 0)
+            {
+                ChessPiece rook = this.chessPiecesMap[0, 0];
+                this.chessPiecesMap[2, 0] = rook;
+                this.moveChessPiece(2, 0);
+                this.chessPiecesMap[0, 0] = null;
+            }
+            if(lastMove[1].y == 7)
+            {
+                ChessPiece rook = this.chessPiecesMap[0, 7];
+                this.chessPiecesMap[2, 7] = rook;
+                this.moveChessPiece(2, 7);
+                this.chessPiecesMap[0, 7] = null;
+            }
+        } 
+        else if(lastMove[1].x == 5)
+        {
+            if (lastMove[1].y == 0)
+            {
+                ChessPiece rook = this.chessPiecesMap[7, 0];
+                this.chessPiecesMap[4, 0] = rook;
+                this.moveChessPiece(4, 0);
+                this.chessPiecesMap[7, 0] = null;
+            }
+            if (lastMove[1].y == 7)
+            {
+                ChessPiece rook = this.chessPiecesMap[7, 7];
+                this.chessPiecesMap[4, 7] = rook;
+                this.moveChessPiece(4, 7);
+                this.chessPiecesMap[7, 7] = null;
+            }
+        }
     }
 
     /** Checks wether the newly selcted position (move) is a valid move
      * 
-     */ 
+     */
     private bool validateMove(List<Vector2Int> validMoves, Vector2Int newPos)
     {
         if(newPos != null && validMoves != null)
@@ -368,15 +481,27 @@ public class GameController : MonoBehaviour
         this.displayVictory(team);
     }
 
+    /** Displays the Victory UI
+     * 
+     */ 
     private void displayVictory(Team team)
     {
         this.winningText.SetText(team.ToString() + " WINS");
         this.victoryScreen.SetActive(true);
     }
 
+    /** Resets the game
+     * 
+     */ 
     public void onResetButton()
     {
         this.victoryScreen.SetActive(false);
+
+        this.currentlyDraggingChessPiece = null;
+        this.possibleMoves.Clear();
+        this.moveList.Clear();
+
+        this.destroyAllSpawnedQueens();
         this.mapChessPieces();
         for (int x = 0; x < X_Size; x++)
         {
@@ -391,8 +516,24 @@ public class GameController : MonoBehaviour
                 }
             }
         }
+        deadWhitePieces.Clear();
+        deadBlackPieces.Clear();
+
+        this.isWhiteTurn = true;
     }
-    
+
+    /** Destroys all queens that were used for promotion
+     * 
+     */ 
+    private void destroyAllSpawnedQueens()
+    {
+        for (int i = 0; i < this.spawnedQueens.Count; i++)
+        {
+            if(spawnedQueens[i] != null)
+            Destroy(spawnedQueens[i].gameObject);
+        }
+    }
+
     public void onQuitButton()
     {
         Application.Quit();

@@ -89,4 +89,9 @@ public class ChessPiece : MonoBehaviour
 
         return possibleMoves;
     }
+    
+    public virtual SpecialMove GetSpecialMoves(ref ChessPiece[,] chessPieceMap, ref List<Vector2Int[]> moveList, ref List<Vector2Int> possibleMoves)
+    {
+        return SpecialMove.NONE;
+    }
 }
