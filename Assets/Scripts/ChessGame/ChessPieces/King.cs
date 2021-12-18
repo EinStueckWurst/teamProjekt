@@ -11,6 +11,8 @@ public class King : ChessPiece
 
         Vector2Int currentPos = ChessGameUtil.floorToIntVector2Int(this.currentPosition);
 
+        possibleMoves.Add(currentPos);
+
         //1 forward
         if (currentPos.y != (tileCountY-1)
             && (chessPieceMap[currentPos.x, currentPos.y +1] == null || chessPieceMap[currentPos.x, currentPos.y +1].team != this.team)

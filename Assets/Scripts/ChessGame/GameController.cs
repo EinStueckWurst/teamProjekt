@@ -166,6 +166,7 @@ public class GameController : MonoBehaviour
                     this.currentlyDraggingChessPiece = this.chessPiecesMap[hitPos.x, hitPos.y];
                     this.possibleMoves = this.currentlyDraggingChessPiece.GetPossibleMoves(ref this.chessPiecesMap, X_Size, Y_Size);
                     this.specialMove = currentlyDraggingChessPiece.GetSpecialMoves(ref this.chessPiecesMap, ref this.moveList, ref this.possibleMoves);
+                    this.preventCheck(Team.WHITE);
                     this.highlightTiles();
                 }
 
@@ -174,6 +175,8 @@ public class GameController : MonoBehaviour
                     this.currentlyDraggingChessPiece = this.chessPiecesMap[hitPos.x, hitPos.y];
                     this.possibleMoves = this.currentlyDraggingChessPiece.GetPossibleMoves(ref this.chessPiecesMap, X_Size, Y_Size);
                     this.specialMove = currentlyDraggingChessPiece.GetSpecialMoves(ref this.chessPiecesMap, ref this.moveList, ref this.possibleMoves);
+
+                    this.preventCheck(Team.BLACK);
                     this.highlightTiles();
                 }
 
@@ -200,9 +203,196 @@ public class GameController : MonoBehaviour
         }
     }
 
+    private void preventCheck(Team team)
+    {
+        ChessPiece king = null;
+        for (int x = 0; x < X_Size; x++)
+        {
+            for (int y = 0; y < Y_Size; y++)
+            {
+                if(this.chessPiecesMap[x, y] != null && this.chessPiecesMap[x, y].type == ChessPieceType.KING 
+                    && this.chessPiecesMap[x, y].team == team)
+                {
+                    king = this.chessPiecesMap[x, y];
+                }
+                
+            }
+        }
+
+        //Check if King is killable right now --> At current position
+            //If yes then King has to move --> all other Pieces are blocked -- Except the pieces that can block the attacker
+
+
+        //Simulation --> for King current Pos
+
+        //Check for each possible King Move if the King can be killed there --> by any Attacker
+        //If One 
+
+        this.simulateKingMove(this.currentlyDraggingChessPiece, ref this.possibleMoves, king);
+    }
+    
+    private void simulateKingMove(ChessPiece currentlyDraggingChessPiece, ref List<Vector2Int> moves, ChessPiece kingChessPiece)
+    {
+
+        //Save current values
+        Vector3 savdPosCurrDragChessPiece = currentlyDraggingChessPiece.currentPosition;
+        Vector2Int floorVec2CurrDragChessPiece = ChessGameUtil.floorToIntVector2Int(currentlyDraggingChessPiece.currentPosition);
+        List<Vector2Int> movesToRemove = new List<Vector2Int>();
+
+
+        //Going through all possible moves, simulate them and check if we are in check
+        for (int i = 0; i < moves.Count; i++)
+        {
+            int simX = moves[i].x;
+            int simY = moves[i].y;
+
+            Vector2Int simFlooredVec2KingPos = ChessGameUtil.floorToIntVector2Int(kingChessPiece.currentPosition);
+            if (currentlyDraggingChessPiece.type == ChessPieceType.KING)
+            {
+                simFlooredVec2KingPos = new Vector2Int(simX, simY);
+            }
+
+            //Copy the Chessboard and list all posible threats for the king
+            ChessPiece[,] copiedChessPiecesMap = new ChessPiece[X_Size, Y_Size];
+            List<ChessPiece> attackers = new List<ChessPiece>();
+
+            for (int x = 0; x < X_Size; x++)
+            {
+                for (int y = 0; y < Y_Size; y++)
+                {
+                    if (this.chessPiecesMap[x, y] != null)
+                    {
+                        copiedChessPiecesMap[x, y] = this.chessPiecesMap[x, y];
+
+
+                        //Copy all attackers
+                        if (copiedChessPiecesMap[x, y].team != currentlyDraggingChessPiece.team)
+                        {
+                            attackers.Add(copiedChessPiecesMap[x, y]);
+                        }
+                    }
+                }
+            }
+
+            //Simulate Move
+
+            //Set the dragging CP to the next move location int the Simulation
+            copiedChessPiecesMap[floorVec2CurrDragChessPiece.x, floorVec2CurrDragChessPiece.y] = null;
+            currentlyDraggingChessPiece.currentPosition.x = simX;
+            currentlyDraggingChessPiece.currentPosition.z = simY;
+            copiedChessPiecesMap[simX, simY] = currentlyDraggingChessPiece;
+
+
+            //Check wether King is in danger
+            var deadPiece = attackers.Find(c =>
+                {
+                    Vector2Int vec2 = ChessGameUtil.floorToIntVector2Int(c.currentPosition);
+                    return (vec2.x == simX) && (vec2.y == simY);
+                }
+            );
+
+            if (deadPiece != null)
+            {
+                attackers.Remove(deadPiece);
+            }
+
+            //Simulate Moves for all attacking pieces
+            List<Vector2Int> simulatedAttackingPiecesMoves = new List<Vector2Int>();
+            for (int k = 0; k < attackers.Count; k++)
+            {
+                var pieceMoves = attackers [k].GetPossibleMoves(ref copiedChessPiecesMap, X_Size, Y_Size);
+
+                for (int t  = 0; t  < pieceMoves.Count; t ++)
+                {
+                    simulatedAttackingPiecesMoves.Add(pieceMoves[t]);
+                }
+            }
+
+            //Is King in Trouble yes? -> Remove Move 
+
+            if(this.validateMove(ref simulatedAttackingPiecesMoves, simFlooredVec2KingPos))
+            {
+                movesToRemove.Add(moves[i]);
+            }
+
+            currentlyDraggingChessPiece.currentPosition = savdPosCurrDragChessPiece;
+
+        }
+
+        //Remove the Moves fro current available movelist
+        for (int i = 0; i < movesToRemove.Count; i++)
+        {
+            moves.Remove(movesToRemove[i]);
+        }
+    }
+
+    private bool isCheckMate()
+    {
+        var lastMove = this.moveList[this.moveList.Count - 1];
+        Team opponentTeam = (chessPiecesMap[lastMove[1].x, lastMove[1].y].team == Team.BLACK) ? Team.WHITE : Team.BLACK;
+
+        List<ChessPiece> attacker = new List<ChessPiece>();
+        List<ChessPiece> protecter = new List<ChessPiece>();
+
+        ChessPiece king = null;
+        for (int x = 0; x < X_Size; x++)
+        {
+            for (int y = 0; y < Y_Size; y++)
+            {
+                if (this.chessPiecesMap[x, y] != null)
+                {
+                    if (this.chessPiecesMap[x,y].team == opponentTeam)
+                    {
+                        protecter.Add(this.chessPiecesMap[x, y]);
+                        if(this.chessPiecesMap[x,y].type == ChessPieceType.KING)
+                        {
+                            king = this.chessPiecesMap[x, y];
+                        }
+                    }
+                    else
+                    {
+                        attacker.Add(this.chessPiecesMap[x, y]);
+                    }
+                }
+
+            }
+        }
+        //Is King right now attacked
+
+        List<Vector2Int> currentMoves = new List<Vector2Int>();
+        for (int i = 0; i < attacker.Count; i++)
+        {
+            var pieceMoves = attacker[i].GetPossibleMoves(ref chessPiecesMap, X_Size, Y_Size);
+            for (int k = 0; k < pieceMoves.Count; k++)
+            {
+                currentMoves.Add(pieceMoves[k]);
+            }
+        }
+        Vector2Int kingVec2Pos = ChessGameUtil.floorToIntVector2Int(king.currentPosition);
+
+        if(this.validateMove(ref currentMoves, kingVec2Pos))
+        {
+            // King under attack --> possible to defend?
+            for (int i = 0; i < protecter.Count; i++)
+            {
+                List<Vector2Int> defMove = protecter[i].GetPossibleMoves(ref this.chessPiecesMap, X_Size, Y_Size);
+                this.simulateKingMove(protecter[i], ref defMove, king);
+
+                if(defMove.Count != 0)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        return false;
+    }
+
     /** Triggers on entering a tile at x,y position
      * 
-     */ 
+     */
     private void onEnterTile(int x, int y)
     {
         this.chessBoard.tiles[x,y].GetComponent<Renderer>().sharedMaterial = this.chessBoard.hoverMaterial;
@@ -213,7 +403,7 @@ public class GameController : MonoBehaviour
      */
     private void onLeaveTile(int x, int y)
     {
-        bool isAPossibleMoveTile = this.validateMove(this.possibleMoves, new Vector2Int(x, y));
+        bool isAPossibleMoveTile = this.validateMove(ref this.possibleMoves, new Vector2Int(x, y));
 
         if(isAPossibleMoveTile)
         {
@@ -293,7 +483,7 @@ public class GameController : MonoBehaviour
     private bool moveTo(ChessPiece draggingChessPiece, Vector2Int hitPos, Vector3 prevPos)
     {
         //If move not valid --> abort
-        if (!this.validateMove(this.possibleMoves, hitPos))
+        if (!this.validateMove(ref this.possibleMoves, hitPos))
         {
             return false;
         }
@@ -325,6 +515,11 @@ public class GameController : MonoBehaviour
         this.moveList.Add(new Vector2Int[] { prevPosVec2, new Vector2Int(hitPos.x, hitPos.y) });
 
         this.handleSpecialMove();
+
+        if(this.isCheckMate())
+        {
+            this.checkMate(draggingChessPiece.team);
+        }
 
         return true;
     }
@@ -418,7 +613,7 @@ public class GameController : MonoBehaviour
     /** Checks wether the newly selcted position (move) is a valid move
      * 
      */
-    private bool validateMove(List<Vector2Int> validMoves, Vector2Int newPos)
+    private bool validateMove(ref List<Vector2Int> validMoves, Vector2Int newPos)
     {
         if(newPos != null && validMoves != null)
         {
