@@ -27,7 +27,7 @@ public class ChessBoard : MonoBehaviour
     /** Generates A tile Grid
      * 
      */
-    private void generateGrid(int tileSize, int tileCountX, int tileCountY )
+    private void generateGrid(float tileSize, int tileCountX, int tileCountY )
     {
         tiles = new GameObject[tileCountX, tileCountY];
 
@@ -43,7 +43,7 @@ public class ChessBoard : MonoBehaviour
     /** Generates one tile
      * 
      */ 
-    private GameObject generateTile(int tileSize, int x, int y)
+    private GameObject generateTile(float tileSize, int x, int y)
     {
         GameObject tileObj = new GameObject(string.Format("X:{0}, Y:{1}", x, y));
         tileObj.transform.parent = transform;

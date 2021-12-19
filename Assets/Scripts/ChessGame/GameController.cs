@@ -120,7 +120,6 @@ public class GameController : MonoBehaviour
     private void handleInputsTransitions(Ray ray)
     {
         RaycastHit info;
-
         if (Physics.Raycast(ray, out info, 100))
         {
             this.whithinBoardHandler(info);
@@ -137,14 +136,11 @@ public class GameController : MonoBehaviour
     private void whithinBoardHandler(RaycastHit info)
     {
         Vector2Int hitPos = chessBoard.lookupTileIndex(info);
-
         //Transition from not hovering at all --> to hovering one Tile
         if (this.currentHover == -Vector2Int.one)
         {
             this.currentHover = hitPos;
-
             this.onEnterTile(this.currentHover.x, this.currentHover.y);
-
         }
         //Transition from Hovering one tile --> to the next tile
         if (this.currentHover != hitPos)
@@ -175,15 +171,9 @@ public class GameController : MonoBehaviour
                     this.currentlyDraggingChessPiece = this.chessPiecesMap[hitPos.x, hitPos.y];
                     this.possibleMoves = this.currentlyDraggingChessPiece.GetPossibleMoves(ref this.chessPiecesMap, X_Size, Y_Size);
                     this.specialMove = currentlyDraggingChessPiece.GetSpecialMoves(ref this.chessPiecesMap, ref this.moveList, ref this.possibleMoves);
-
                     this.preventCheck(Team.BLACK);
                     this.highlightTiles();
                 }
-
-                //this.currentlyDraggingChessPiece = this.chessPiecesMap[hitPos.x, hitPos.y];
-                //this.possibleMoves = this.currentlyDraggingChessPiece.GetPossibleMoves(ref this.chessPiecesMap, X_Size, Y_Size);
-                //this.specialMove = currentlyDraggingChessPiece.GetSpecialMoves(ref this.chessPiecesMap, ref this.moveList, ref this.possibleMoves);
-                //this.highlightTiles();
             }
         }
         //Letting Go of the ChessPiece
@@ -219,26 +209,15 @@ public class GameController : MonoBehaviour
             }
         }
 
-        //Check if King is killable right now --> At current position
-            //If yes then King has to move --> all other Pieces are blocked -- Except the pieces that can block the attacker
-
-
-        //Simulation --> for King current Pos
-
-        //Check for each possible King Move if the King can be killed there --> by any Attacker
-        //If One 
-
         this.simulateKingMove(this.currentlyDraggingChessPiece, ref this.possibleMoves, king);
     }
     
     private void simulateKingMove(ChessPiece currentlyDraggingChessPiece, ref List<Vector2Int> moves, ChessPiece kingChessPiece)
     {
-
         //Save current values
         Vector3 savdPosCurrDragChessPiece = currentlyDraggingChessPiece.currentPosition;
         Vector2Int floorVec2CurrDragChessPiece = ChessGameUtil.floorToIntVector2Int(currentlyDraggingChessPiece.currentPosition);
         List<Vector2Int> movesToRemove = new List<Vector2Int>();
-
 
         //Going through all possible moves, simulate them and check if we are in check
         for (int i = 0; i < moves.Count; i++)
@@ -263,7 +242,6 @@ public class GameController : MonoBehaviour
                     if (this.chessPiecesMap[x, y] != null)
                     {
                         copiedChessPiecesMap[x, y] = this.chessPiecesMap[x, y];
-
 
                         //Copy all attackers
                         if (copiedChessPiecesMap[x, y].team != currentlyDraggingChessPiece.team)
@@ -395,7 +373,10 @@ public class GameController : MonoBehaviour
      */
     private void onEnterTile(int x, int y)
     {
-        this.chessBoard.tiles[x,y].GetComponent<Renderer>().sharedMaterial = this.chessBoard.hoverMaterial;
+        if(x >= 0 && y >= 0 && x < X_Size && y < Y_Size)
+        {
+            this.chessBoard.tiles[x,y].GetComponent<Renderer>().sharedMaterial = this.chessBoard.hoverMaterial;
+        }
     }
 
     /** Triggers on leaving a tile at x,y position
@@ -462,10 +443,11 @@ public class GameController : MonoBehaviour
 
     /** Drags selected chessPiece along an xz-plane
      * 
-     */ 
+     */
     private void dragChessPiece(Ray ray)
     {
-        Plane plane = new Plane(Vector3.up, Vector3.up * chessBoard.yOffset);
+        Plane plane = new Plane(Vector3.up, Vector3.up *chessBoard.yOffset );
+
         float dist = 0f;
         if (plane.Raycast(ray, out dist))
         {
@@ -473,6 +455,8 @@ public class GameController : MonoBehaviour
             intersection.x -= 0.5f;
             intersection.z -= 0.5f;
             intersection.y += 0.3f;
+
+            Debug.Log("Inter: " + intersection);
             currentlyDraggingChessPiece.SetPosition(intersection);
         }
     }
@@ -693,8 +677,15 @@ public class GameController : MonoBehaviour
         this.victoryScreen.SetActive(false);
 
         this.currentlyDraggingChessPiece = null;
-        this.possibleMoves.Clear();
-        this.moveList.Clear();
+        if(this.possibleMoves != null)
+        {
+            this.possibleMoves.Clear();
+        }
+        if(this.moveList != null)
+        {
+            this.moveList.Clear();
+        }
+        
 
         this.destroyAllSpawnedQueens();
         this.mapChessPieces();

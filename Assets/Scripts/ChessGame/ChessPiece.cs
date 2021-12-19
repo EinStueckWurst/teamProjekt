@@ -34,8 +34,8 @@ public class ChessPiece : MonoBehaviour
     #region Unity Builtin Methods
     void Awake()
     {
-        this.originalPosition = new Vector3(transform.position.x, 0, transform.position.z);
-
+        
+        this.originalPosition = new Vector3(transform.localPosition.x, 0, transform.localPosition.z);
         this.currentPosition = this.originalPosition;
         this.desiredPosition = this.currentPosition;
 
@@ -45,7 +45,11 @@ public class ChessPiece : MonoBehaviour
 
     public void Update()
     {
-        transform.position = Vector3.Lerp(this.transform.position, this.desiredPosition, Time.deltaTime * 10);
+
+        //Debug.Log("Type: " + type.ToString());
+        //Debug.Log("CurrentPos: " + th);
+        //Debug.Log("DesiredPos: " + desiredPosition);
+        transform.localPosition = Vector3.Lerp(this.transform.localPosition, this.desiredPosition, Time.deltaTime * 10);
         transform.localScale = Vector3.Lerp(this.transform.localScale, this.desiredScale, Time.deltaTime * 10);
     }
     #endregion
