@@ -155,7 +155,7 @@ public class GameController : MonoBehaviour
         //Selectiong ChessPiece
         if (Input.GetMouseButtonDown(0))
         {
-            if (this.chessPiecesMap[hitPos.x, hitPos.y] != null)
+            if (hitPos.x >=0 && hitPos.x <X_Size && hitPos.y >=0 && hitPos.y < Y_Size && this.chessPiecesMap[hitPos.x, hitPos.y] != null)
             {
                 if (this.chessPiecesMap[hitPos.x, hitPos.y].team == Team.WHITE && this.isWhiteTurn)
                 {
@@ -446,8 +446,7 @@ public class GameController : MonoBehaviour
      */
     private void dragChessPiece(Ray ray)
     {
-        Plane plane = new Plane(Vector3.up, Vector3.up *chessBoard.yOffset );
-
+        Plane plane = new Plane(Vector3.up, transform.position * chessBoard.yOffset);
         float dist = 0f;
         if (plane.Raycast(ray, out dist))
         {
@@ -456,7 +455,6 @@ public class GameController : MonoBehaviour
             intersection.z -= 0.5f;
             intersection.y += 0.3f;
 
-            Debug.Log("Inter: " + intersection);
             currentlyDraggingChessPiece.SetPosition(intersection);
         }
     }
