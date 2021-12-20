@@ -448,13 +448,13 @@ public class GameController : MonoBehaviour
     {
         Plane plane = new Plane(Vector3.up, transform.position * chessBoard.yOffset);
         float dist = 0f;
+
         if (plane.Raycast(ray, out dist))
         {
             Vector3 intersection = ray.GetPoint(dist);
             intersection.x -= 0.5f;
             intersection.z -= 0.5f;
             intersection.y += 0.3f;
-
             currentlyDraggingChessPiece.SetPosition(intersection);
         }
     }
@@ -684,7 +684,6 @@ public class GameController : MonoBehaviour
             this.moveList.Clear();
         }
         
-
         this.destroyAllSpawnedQueens();
         this.mapChessPieces();
         for (int x = 0; x < X_Size; x++)
