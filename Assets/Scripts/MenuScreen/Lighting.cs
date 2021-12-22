@@ -8,10 +8,7 @@ public class Lighting : MonoBehaviour
     [SerializeField] public Light lightObj;
     [SerializeField] public RawImage capturedPhoto;
     [SerializeField] public UserConfiguration userConfiguration;
-    public Color averageLightColor;
-    /* Searches the brightest part of the sphere
-     * 
-     */
+   
     Vector3 getBrightPart()
     {
         int imgWidth = capturedPhoto.texture.width;
@@ -59,8 +56,7 @@ public class Lighting : MonoBehaviour
             }
         }
         
-        // average of color of lightest point and the color white (half distance between white and color of brightest point)
-        //averageLightColor = Color.white-((Color.white - texture2D.GetPixel(maxX, maxY))/2) ;
+        
         //average of all colors of the ball
         averageLightColor=new Color(sumRed/counter, sumGreen/counter, sumBlue/counter);
         Vector3 HSVaverageColor;
@@ -101,9 +97,10 @@ public class Lighting : MonoBehaviour
         lightObj.color=averageLightColor;
         userConfiguration.setLightCol(averageLightColor);
     }
+
     /** Saves Lightdirection in Userconfig
      * 
-     */ 
+     */
     public void saveLightDirection()
     {
         Vector3 direction = getBrightPart().normalized; // in Eyspace
