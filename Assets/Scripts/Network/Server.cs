@@ -11,7 +11,7 @@ public class Server : MonoBehaviour, INetEventListener
 {
     [SerializeField] public UserConfiguration myUserConfig;
     [SerializeField] public ServerDataStorage serverData;
-    [SerializeField] public GameObject lobbyPanel;
+    [SerializeField] public GameObject lobbyPlayerPanel;
     
     NetManager netManager;
 
@@ -187,10 +187,10 @@ public class Server : MonoBehaviour, INetEventListener
     {
         for(int i = 0; i < this.serverData.activeUsers.Count; i++)
         {
-            Transform t = this.lobbyPanel.transform.GetChild(i);
+            Transform t = this.lobbyPlayerPanel.transform.GetChild(i);
             if(!t.gameObject.activeInHierarchy)
             {
-                this.lobbyPanel.transform.GetChild(i).gameObject.SetActive(true);
+                this.lobbyPlayerPanel.transform.GetChild(i).gameObject.SetActive(true);
             }
         }
     }
