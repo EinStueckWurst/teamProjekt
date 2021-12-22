@@ -8,7 +8,7 @@ public class Lighting : MonoBehaviour
     [SerializeField] public Light lightObj;
     [SerializeField] public RawImage capturedPhoto;
     [SerializeField] public UserConfiguration userConfiguration;
-
+    public Color averageLightColor;
     /* Searches the brightest part of the sphere
      * 
      */
@@ -16,13 +16,17 @@ public class Lighting : MonoBehaviour
     {
         int imgWidth = capturedPhoto.texture.width;
         int imgHeight = capturedPhoto.texture.height;
+        Debug.Log("resultimage:x= "+imgWidth+" ,y= "+imgHeight);
         float rad = imgWidth * 0.5f;
         int centerX = imgWidth / 2;
         int centerY = imgHeight / 2;
         float brightnessMax = 0;
         int maxX = 0;
         int maxY = 0;
-
+        float sumRed=0;
+        float sumGreen=0;
+        float sumBlue=0;
+        int counter=0;
         Texture2D texture2D = Util.fromTextureToTexture2D(capturedPhoto.texture);
 
         for (int i = 0; i < imgWidth; i++)
@@ -37,6 +41,10 @@ public class Lighting : MonoBehaviour
                     float redPart = 0.299f * col.r * col.r;
                     float greenPart = 0.587f * col.g * col.g;
                     float bluePart = 0.114f * col.b * col.b;
+                    sumRed+=col.r;
+                    sumGreen+=col.g;
+                    sumBlue+=col.b;
+                    counter++;
 
                     float brightness = Mathf.Sqrt(redPart + greenPart + bluePart);
 
@@ -46,9 +54,20 @@ public class Lighting : MonoBehaviour
                         maxX = i;
                         maxY = j;
                     }
+                    
                 }
             }
         }
+        
+        // average of color of lightest point and the color white (half distance between white and color of brightest point)
+        //averageLightColor = Color.white-((Color.white - texture2D.GetPixel(maxX, maxY))/2) ;
+        //average of all colors of the ball
+        averageLightColor=new Color(sumRed/counter, sumGreen/counter, sumBlue/counter);
+        Vector3 HSVaverageColor;
+        Color.RGBToHSV((averageLightColor),out HSVaverageColor.x,out HSVaverageColor.y,out HSVaverageColor.z);
+        HSVaverageColor[1]= 0.5F + HSVaverageColor[2]/2; //increase saturation
+        averageLightColor = Color.HSVToRGB(HSVaverageColor.x, HSVaverageColor.y, HSVaverageColor.z);
+
         float u = (float)maxX / (float)imgWidth;
         float v = (float)maxY / (float)imgHeight;
         float x = 2 * u - 1;
@@ -75,8 +94,13 @@ public class Lighting : MonoBehaviour
         Quaternion lightDirection = Quaternion.LookRotation(direction);
 
         lightObj.transform.rotation = Quaternion.Slerp(lightObj.transform.rotation, lightDirection, 1);
+        
     }
-
+    public void applyLightColor()
+    {
+        lightObj.color=averageLightColor;
+        userConfiguration.setLightCol(averageLightColor);
+    }
     /** Saves Lightdirection in Userconfig
      * 
      */ 

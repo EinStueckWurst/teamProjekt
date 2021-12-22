@@ -16,6 +16,7 @@ public class UserConfiguration : MonoBehaviour
 
     public bool isActive = false;
     public Vector3 lightDir = new Vector3(0, 0, 0);
+    public Color lightCol = Color.black;
     public UserRole role = UserRole.SPECTATOR;
 
     public UserConfiguration() { }
@@ -62,6 +63,14 @@ public class UserConfiguration : MonoBehaviour
     public Vector3 getLightDir()
     {
         return this.lightDir;
+    }
+    public void setLightCol(Color lightCol)
+    {
+        this.lightCol = lightCol;
+    }
+    public Color getLightCol()
+    {
+        return this.lightCol;
     }
     public void setUserToLobbyCreator()
     {
