@@ -20,6 +20,13 @@ public class Navigation : MonoBehaviour
 {
     [SerializeField] Animator menuAnimator;
 
+    [SerializeField] UserConfiguration myUserConfig;
+    [SerializeField] CameraController makePhotoPanelCameraController;
+    [SerializeField] Calibration capturedPhotoPanelCalibration;
+    [SerializeField] Lighting viewLightOrientationPanelLighting;
+    [SerializeField] Client client;
+    [SerializeField] Server server;
+
     #region Stuff
     /** Loads the Scene by given BuildIndex
      * 
@@ -82,8 +89,9 @@ public class Navigation : MonoBehaviour
      */
     public void OnActiveButton()
     {
-        Debug.Log("Active Button");
         this.menuAnimator.SetTrigger(Triggers.MAKE_PHOTO_PANEL);
+        this.myUserConfig.setActive();
+        this.makePhotoPanelCameraController.Init();
     }
     
     /** Triggers MainMenue -> PassiveButton
@@ -91,8 +99,8 @@ public class Navigation : MonoBehaviour
      */ 
     public void OnPassivButton()
     {
-        Debug.Log("Passive Button");
         this.menuAnimator.SetTrigger(Triggers.LOBBY_PANEL);
+        this.myUserConfig.setPassive();
     }
     #endregion
 
@@ -103,7 +111,7 @@ public class Navigation : MonoBehaviour
     public void OnMakePhotoBackButton()
     {
         this.menuAnimator.SetTrigger(Triggers.MAIN_MENU);
-        Debug.Log("Back To MainMenue");
+        this.makePhotoPanelCameraController.DeactivateCamera();
     }
     
     /** Triggers MakePhotoPanel -> MakePhotoButton
@@ -112,7 +120,7 @@ public class Navigation : MonoBehaviour
     public void OnMakePhotoButton()
     {
         this.menuAnimator.SetTrigger(Triggers.CAPTURED_PHOTO_PANEL);
-        Debug.Log("Make Photo Button");
+        this.makePhotoPanelCameraController.TakePhoto();
     }
     #endregion
 
@@ -124,7 +132,7 @@ public class Navigation : MonoBehaviour
     public void OnCapturedPhotoBackButton()
     {
         this.menuAnimator.SetTrigger(Triggers.MAKE_PHOTO_PANEL);
-        Debug.Log("Back To Make Photo");
+        this.makePhotoPanelCameraController.Init();
     }
 
     /** Triggers CapturedPhotoPanel -> CPU Compute Button
@@ -132,7 +140,9 @@ public class Navigation : MonoBehaviour
      */
     public void OnCpuComputeButton()
     {
-        Debug.Log("HoughCompute with CPU");
+        this.capturedPhotoPanelCalibration.CalibrateWithCPU();
+        this.viewLightOrientationPanelLighting.orientLightDirection();
+        this.viewLightOrientationPanelLighting.saveLightDirection();
         this.menuAnimator.SetTrigger(Triggers.VIEW_LIGHT_ORIENTATION_PANEL);
     }
     
@@ -141,8 +151,10 @@ public class Navigation : MonoBehaviour
      */ 
     public void OnGpuComputeButton()
     {
-        Debug.Log("HoughCompute with GPU");
+        this.capturedPhotoPanelCalibration.CalibrateWithGPU();
 
+        this.viewLightOrientationPanelLighting.orientLightDirection();
+        this.viewLightOrientationPanelLighting.saveLightDirection();
         this.menuAnimator.SetTrigger(Triggers.VIEW_LIGHT_ORIENTATION_PANEL);
     }
     #endregion
@@ -155,7 +167,6 @@ public class Navigation : MonoBehaviour
     public void OnViewLightOrientationBackButton()
     {
         this.menuAnimator.SetTrigger(Triggers.CAPTURED_PHOTO_PANEL);
-        Debug.Log("Back To Captured Photo Panel");
     }
 
     /** Triggers ViewLightOrientationPanel -> SearchButton
@@ -163,7 +174,8 @@ public class Navigation : MonoBehaviour
      */
     public void OnSearchButton()
     {
-        Debug.Log("Start Searching for Host");
+        this.myUserConfig.setUserRoleToLobbyJoiner();
+        this.client.StartClient();
         this.menuAnimator.SetTrigger(Triggers.LOBBY_PANEL);
     }
 
@@ -172,30 +184,38 @@ public class Navigation : MonoBehaviour
      */
     public void OnHostButton()
     {
-        Debug.Log("Launch Host");
+        this.myUserConfig.setUserToLobbyCreator();
+        this.server.startServer();
         this.menuAnimator.SetTrigger(Triggers.LOBBY_PANEL);
     }
     #endregion
     
     #region LobbyPanel
 
-    /** Triggers ViewLightOrientationPanel -> BackButton
+    /** Triggers LobbyPanel -> BackButton
      * 
      */
-    public void OnLobbyPanelActiveBackButton()
+    public void OnLobbyBackButton()
     {
-        Debug.Log("Back To ViewLightOrientationPanel");
-        this.menuAnimator.SetTrigger(Triggers.VIEW_LIGHT_ORIENTATION_PANEL);
+        if(this.myUserConfig.isActive)
+        {
+            this.menuAnimator.SetTrigger(Triggers.VIEW_LIGHT_ORIENTATION_PANEL);
+            
+        } 
+        else
+        {
+            this.menuAnimator.SetTrigger(Triggers.MAIN_MENU);
+        }
 
-    }
-
-    /** Triggers ViewLightOrientationPanel -> BackButton
-     * 
-     */
-    public void OnLobbyPanelPassiveBackButton()
-    {
-        Debug.Log("Back To Main Menue");
-        this.menuAnimator.SetTrigger(Triggers.MAIN_MENU);
+        //Stop Client or Server
+        if (this.myUserConfig.role == UserRole.LOBBY_CREATOR)
+        {
+            this.server.StopServer();
+        }
+        else
+        {
+            this.client.StopClient();
+        }
 
     }
 
@@ -208,23 +228,5 @@ public class Navigation : MonoBehaviour
         Debug.Log("START GAme");
     }
     #endregion
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 }

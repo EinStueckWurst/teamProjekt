@@ -48,6 +48,7 @@ public class Client : MonoBehaviour, INetEventListener
         if (this.netManager != null && this.netManager.IsRunning)
         {
             this.netManager.PollEvents();
+            //If no Connections send Discovery
             if(this.netManager.ConnectedPeersCount == 0)
             {
                 this.senDiscoveryRequest();
@@ -56,12 +57,16 @@ public class Client : MonoBehaviour, INetEventListener
         }
     }
 
+    /** Discover a Server
+     * 
+     */ 
     public void senDiscoveryRequest()
     {
         var peer = this.netManager.FirstPeer;
 
         if(peer != null && peer.ConnectionState == ConnectionState.Connected)
         {
+
         } 
         else
         {
@@ -76,7 +81,6 @@ public class Client : MonoBehaviour, INetEventListener
 
     public void OnPeerConnected(NetPeer peer)
     {
-
         this.clientData.serverPeer = peer;
 
         //Package myUserConfig into a TransmissionContainerModel and setup Action and Datamodel
@@ -91,7 +95,6 @@ public class Client : MonoBehaviour, INetEventListener
         NetDataWriter writer = new NetDataWriter();
         writer.Put(json);
 
-        
         //Triggering OnNetworkReceive on the serverside and execute the Desired Action
         peer.Send(writer, DeliveryMethod.ReliableOrdered);
     }

@@ -8,6 +8,8 @@ public class CameraController : MonoBehaviour
 {
     [SerializeField] public RawImage rawCamDisplay;
     [SerializeField] public RawImage capturedPhotoRaw;
+    [SerializeField] public Calibration capturedPhotoPanel;
+
 
     public static WebCamTexture camera;
     bool camAvailable = false;
@@ -70,7 +72,7 @@ public class CameraController : MonoBehaviour
 
     /** Deactivates the Camera
      * 
-     */ 
+     */
     public void DeactivateCamera()
     {
         if (camera != null)
@@ -82,26 +84,27 @@ public class CameraController : MonoBehaviour
 
     /** Starts PhotoCoroutine
      * 
-     */ 
+     */
     public void TakePhoto()
     {
         if(camAvailable && camera.isPlaying)
         {
             StartCoroutine(this.StartTakingPhotoCoroutine());
-            this.DeactivateCamera();
         }
     }
 
     private IEnumerator StartTakingPhotoCoroutine()
     {
-
         RenderTexture renderTexture = new RenderTexture(camera.width, camera.height, 1);
         renderTexture.Create();
+
         Graphics.Blit(camera, renderTexture);
 
         Texture2D tmp = Util.ToTexture2D(renderTexture, RenderTexture.active);
 
         this.capturedPhotoRaw.texture = Util.ToRenderTexture(Util.ResampleAndCrop(tmp,848, 848), RenderTexture.active);
+        this.DeactivateCamera();
+        this.capturedPhotoPanel.OnCalibrationInit();
         yield return new WaitForEndOfFrame();
     }
 }

@@ -22,7 +22,6 @@ public class Lighting : MonoBehaviour
         float brightnessMax = 0;
         int maxX = 0;
         int maxY = 0;
-
         Texture2D texture2D = Util.fromTextureToTexture2D(capturedPhoto.texture);
 
         for (int i = 0; i < imgWidth; i++)
@@ -61,7 +60,7 @@ public class Lighting : MonoBehaviour
         return new Vector3(x,y,z);
     }
 
-    /** reorients the directional Light
+    /** Reorients the directional Light
      * 
      */ 
     public void orientLightDirection()
@@ -85,6 +84,4 @@ public class Lighting : MonoBehaviour
         Vector3 direction = getBrightPart().normalized; // in Eyspace
         userConfiguration.setLightDir(direction);
     }
-
-    
 }
