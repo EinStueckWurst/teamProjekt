@@ -28,6 +28,9 @@ public class Server : MonoBehaviour, INetEventListener
         this.netManager.UpdateTime = 15;
         this.netManager.ReuseAddress = true;
 
+        this.serverData.activeUsers = new List<UserConfiguration>();
+        this.serverData.passiveUsers = new List<UserConfiguration>();
+        
         this.serverData.activeUsers.Add(myUserConfig);
         this.serverData.MyNetworkId = this.myUserConfig.networkId;
 
@@ -47,8 +50,8 @@ public class Server : MonoBehaviour, INetEventListener
         {
             if (this.netManager != null)
             {
-                this.netManager.DisconnectAll();
                 this.netManager.Stop();
+                this.netManager = null;
             }
             Debug.Log("SERVER Stopped");
         }
@@ -75,7 +78,6 @@ public class Server : MonoBehaviour, INetEventListener
             {
                 //Deserialize json into UserConfigModel class
                 UserConfigModel userConfigModel = JsonUtility.FromJson<UserConfigModel>(reqDataJson);
-
                 //Check if User is already registered -- basically just check wether user is in activeUsers list or passiveUsers list
                 if (!NetworkUtils.userAlreadyExists(userConfigModel, this.serverData.activeUsers) && !NetworkUtils.userAlreadyExists(userConfigModel, this.serverData.passiveUsers))
                 {
@@ -124,8 +126,9 @@ public class Server : MonoBehaviour, INetEventListener
                 if(container.dataModel == DataModel.USER_CONFIG_MODEL)
                 {
                     UserConfigModel userConfigModel = container.configModel;
+                    userConfigModel.userPeerInfo = peer;
                     NetworkUtils.addUser(userConfigModel, this.serverData.activeUsers, this.serverData.passiveUsers); //wird bei ConnectionReq bereits geprüft, ob der User bereits existiert
-                    UpdateLobbyAfterUserAdded();
+                    this.EnableActiveUserIcon();
                     Debug.Log("SERVER : Amount Of Passive Users: " + this.serverData.passiveUsers.Count);
                     InformAllClientsUserAdded();
 
@@ -183,16 +186,9 @@ public class Server : MonoBehaviour, INetEventListener
     /** Just Activates any new Users (Index of these activated Users is the same as the index of the activeUser list)
      * 
      */
-    void UpdateLobbyAfterUserAdded()
+    void EnableActiveUserIcon()
     {
-        for(int i = 0; i < this.serverData.activeUsers.Count; i++)
-        {
-            Transform t = this.lobbyPlayerPanel.transform.GetChild(i);
-            if(!t.gameObject.activeInHierarchy)
-            {
-                this.lobbyPlayerPanel.transform.GetChild(i).gameObject.SetActive(true);
-            }
-        }
+        this.lobbyPlayerPanel.transform.GetChild(1).gameObject.SetActive(true);
     }
 
     public void OnNetworkReceiveUnconnected(IPEndPoint remoteEndPoint, NetPacketReader reader, UnconnectedMessageType messageType)
@@ -207,6 +203,35 @@ public class Server : MonoBehaviour, INetEventListener
 
     public void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo)
     {
+        this.DisableActiveUserIcon();
+        //Check Wether active USer or passive User disconnected
+        for(int i = 0; i < this.serverData.activeUsers.Count; i++)
+        {
+            UserConfiguration user = this.serverData.activeUsers[i];
+            if(user.userPeerInfo == peer)
+            {
+                this.serverData.activeUsers.RemoveAt(i);
+                return;
+            }
+        }
+        
+        for(int i = 0; i < this.serverData.passiveUsers.Count; i++)
+        {
+            UserConfiguration user = this.serverData.passiveUsers[i];
+            if(user.userPeerInfo == peer)
+            {
+                this.serverData.passiveUsers.RemoveAt(i);
+                return;
+            }
+        }
+    }
+
+    /** Disables Visible-UserIcon in the Lobby
+     * 
+     */
+    void DisableActiveUserIcon()
+    {
+        this.lobbyPlayerPanel.transform.GetChild(1).gameObject.SetActive(false);
     }
 
     public void OnNetworkError(IPEndPoint endPoint, SocketError socketError)

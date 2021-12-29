@@ -2515,7 +2515,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &244496251
 RectTransform:
   m_ObjectHideFlags: 0
@@ -5256,7 +5256,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 586055054}
         m_TargetAssemblyTypeName: Navigation, Assembly-CSharp
-        m_MethodName: OnLobbyPanelPassiveBackButton
+        m_MethodName: OnPassivButton
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -13900,7 +13900,7 @@ RectTransform:
   m_AnchorMin: {x: 1, y: 0.5}
   m_AnchorMax: {x: 1, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 2400, y: 1080}
+  m_SizeDelta: {x: 1200, y: 1080}
   m_Pivot: {x: 1, y: 0.5}
 --- !u!114 &1388983697
 MonoBehaviour:
@@ -15328,7 +15328,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &1558535361
 RectTransform:
   m_ObjectHideFlags: 0

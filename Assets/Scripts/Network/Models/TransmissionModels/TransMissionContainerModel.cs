@@ -1,4 +1,5 @@
-﻿using System;
+﻿using LiteNetLib;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -9,6 +10,7 @@ public class TransMissionContainerModel
     public Action action;
     public DataModel dataModel;
     public UserConfigModel configModel;
+    public NetPeer userPeerInfo;
 
     public int NumActiveUsers;
     public int NumPassiveUsers;
@@ -18,7 +20,8 @@ public class TransMissionContainerModel
     public TransMissionContainerModel(
         Action action,
         DataModel dataModel,
-        UserConfigModel configModel = null
+        UserConfigModel configModel = null,
+        NetPeer userPeerInfo = null
         )
     {
         this.action = action;
@@ -27,6 +30,11 @@ public class TransMissionContainerModel
         if (configModel != null)
         {
             this.configModel = configModel;
+        }
+        
+        if (userPeerInfo != null)
+        {
+            this.userPeerInfo = userPeerInfo;
         }
     }
 }

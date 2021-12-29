@@ -101,6 +101,7 @@ public class Navigation : MonoBehaviour
     {
         this.menuAnimator.SetTrigger(Triggers.LOBBY_PANEL);
         this.myUserConfig.setPassive();
+        Debug.Log("HELLO");
     }
     #endregion
 

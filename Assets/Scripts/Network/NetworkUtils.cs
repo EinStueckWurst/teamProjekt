@@ -10,7 +10,8 @@ public static class NetworkUtils
             userConfigModel.networkId,
             userConfigModel.isActive,
             userConfigModel.lightDir, 
-            userConfigModel.role
+            userConfigModel.role,
+            userConfigModel.userPeerInfo
             );
         return userConfig;
     }
@@ -21,7 +22,8 @@ public static class NetworkUtils
             userConfig.networkId,
             userConfig.isActive,
             userConfig.lightDir,
-            userConfig.role
+            userConfig.role,
+            userConfig.userPeerInfo
             );
 
         return userConfigModel;
@@ -54,9 +56,23 @@ public static class NetworkUtils
         }
     }
 
+    public static void removeUser(UserConfigModel userConfigModel, List<UserConfiguration> activeUsers, List<UserConfiguration> passiveUsers)
+    {
+        UserConfiguration uc = NetworkUtils.toUserConfiguration(userConfigModel);
+
+        if (uc.isActive)
+        {
+            activeUsers.Add(uc);
+        }
+        else
+        {
+            passiveUsers.Add(uc);
+        }
+    }
+
     /** Returns the mean of all light directions ---> basically 1/n * (v1 + v2 + ... + vn)
      * 
-     */ 
+     */
     public static Vector3 averageLightDirections(List<UserConfiguration> activeUsers)
     {
         Vector3 res = Vector3.zero;

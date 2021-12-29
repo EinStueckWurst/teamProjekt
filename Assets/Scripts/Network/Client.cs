@@ -33,8 +33,8 @@ public class Client : MonoBehaviour, INetEventListener
         {
             if (netManager != null)
             {
-                this.netManager.DisconnectAll();
                 this.netManager.Stop();
+                this.netManager = null;
             }
             Debug.Log("CLIENT Stopped ");
         }
@@ -112,7 +112,7 @@ public class Client : MonoBehaviour, INetEventListener
                 {
                     this.clientData.numOfActiveUsers = container.NumActiveUsers;
                     this.clientData.numOfPassiveUsers = container.NumPassiveUsers;
-                    UpdateLobbyAfterUserAdded(this.clientData.numOfActiveUsers);
+                    this.ActivateOponentIcon();
                     Debug.Log("[CLIENT] Num of Passive Clients " + this.clientData.numOfActiveUsers);
                 }
                 break;
@@ -132,32 +132,17 @@ public class Client : MonoBehaviour, INetEventListener
     /** Activates Users that are Visualized on the Server
      * 
      */
-    void UpdateLobbyAfterUserAdded(int numActiveUsers)
+    void ActivateOponentIcon()
     {
-        this.DeactivateAllUsers();
-        for (int i = 0; i < numActiveUsers; i++)
-        {
-            Transform t = this.lobbyPanel.transform.GetChild(i);
-            if (!t.gameObject.activeInHierarchy)
-            {
-                this.lobbyPanel.transform.GetChild(i).gameObject.SetActive(true);
-            }
-        }
+        this.lobbyPanel.transform.GetChild(1).gameObject.SetActive(true);
     }
 
-    /** Disables all PlayerGameobjects In the Lobby
+    /** Disables all PlayerIcon In the Lobby
      * 
      */
-    private void DeactivateAllUsers()
+    private void DeactivateOponentIcon()
     {
-        for (int i = 0; i < this.lobbyPanel.transform.childCount; i++)
-        {
-            Transform t = this.lobbyPanel.transform.GetChild(i);
-            if (!t.gameObject.activeInHierarchy)
-            {
-                this.lobbyPanel.transform.GetChild(i).gameObject.SetActive(false);
-            }
-        }
+        this.lobbyPanel.transform.GetChild(1).gameObject.SetActive(false);
     }
 
     public void OnNetworkReceiveUnconnected(IPEndPoint remoteEndPoint, NetPacketReader reader, UnconnectedMessageType messageType)
@@ -184,6 +169,7 @@ public class Client : MonoBehaviour, INetEventListener
 
     public void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo)
     {
+        this.DeactivateOponentIcon();
     }
 
     public void OnNetworkError(IPEndPoint endPoint, SocketError socketError)
