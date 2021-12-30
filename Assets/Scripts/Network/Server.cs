@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
+using TMPro;
 using UnityEngine;
 
 public class Server : MonoBehaviour, INetEventListener
@@ -16,6 +17,9 @@ public class Server : MonoBehaviour, INetEventListener
     [SerializeField] public GameController gameController;
     [SerializeField] public Navigation navigation;
     [SerializeField] public Lighting lighting;
+
+    [SerializeField] TextMeshProUGUI passiveUserCount;
+    [SerializeField] TextMeshProUGUI averagedLightDir;
 
     public NetManager netManager;
 
@@ -133,6 +137,8 @@ public class Server : MonoBehaviour, INetEventListener
                     userConfigModel.userPeerInfo = peer;
                     NetworkUtils.addUser(userConfigModel, this.serverData.activeUsers, this.serverData.passiveUsers); //wird bei ConnectionReq bereits geprüft, ob der User bereits existiert
                     this.EnableActiveUserIcon();
+
+                    this.passiveUserCount.SetText($"#PassiveUsers: {this.serverData.passiveUsers.Count}");
                     Debug.Log("SERVER : Amount Of Passive Users: " + this.serverData.passiveUsers.Count);
                     InformAllClientsUserAdded();
 
@@ -140,6 +146,8 @@ public class Server : MonoBehaviour, INetEventListener
                     {
                         this.serverData.meanLightDir = NetworkUtils.averageLightDirections(this.serverData.activeUsers);
                         this.lighting.reorientLightDir(this.serverData.meanLightDir);
+
+                        this.averagedLightDir.SetText($"MeanLightDir: {this.serverData.meanLightDir}");
                         InformAllClientsAverageLightDir();
                     }
                 }

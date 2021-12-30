@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
+using TMPro;
 using UnityEngine;
 
 public class Client : MonoBehaviour, INetEventListener
@@ -16,6 +17,9 @@ public class Client : MonoBehaviour, INetEventListener
     [SerializeField] public GameController gameController;
     [SerializeField] Navigation navigationController;
     [SerializeField] public Lighting lighting;
+
+    [SerializeField] TextMeshProUGUI passiveUserCount;
+    [SerializeField] TextMeshProUGUI averagedLightDir;
 
     public NetManager netManager;
     public void StartClient()
@@ -117,6 +121,7 @@ public class Client : MonoBehaviour, INetEventListener
                     this.clientData.numOfActiveUsers = container.NumActiveUsers;
                     this.clientData.numOfPassiveUsers = container.NumPassiveUsers;
                     this.ActivateOponentIcon();
+                    this.passiveUserCount.SetText($"#PassiveUsers: {this.clientData.numOfPassiveUsers}");
                     Debug.Log("[CLIENT] Num of Passive Clients " + this.clientData.numOfActiveUsers);
                 }
                 break;
@@ -125,6 +130,7 @@ public class Client : MonoBehaviour, INetEventListener
                 {
                     this.clientData.meanLightDir = container.MeanLightDir;
                     this.lighting.reorientLightDir(this.clientData.meanLightDir);
+                    this.averagedLightDir.SetText($"MeanLightDir: {this.clientData.meanLightDir}");
                     Debug.Log("[CLIENT] Mean Light Dir recieved: "+ this.clientData.meanLightDir);
                 }
                 break;
