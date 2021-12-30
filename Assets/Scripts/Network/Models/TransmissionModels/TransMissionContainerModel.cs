@@ -16,6 +16,7 @@ public class TransMissionContainerModel
     public int NumPassiveUsers;
     
     public Vector3 MeanLightDir;
+    public Color MeanLightColor;
     public Team team;
 
     public Vector2Int originPos;

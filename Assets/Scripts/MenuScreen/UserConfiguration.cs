@@ -28,7 +28,8 @@ public class UserConfiguration : MonoBehaviour
         bool isActive,
         Vector3 lightDir,
         UserRole userRole,
-        NetPeer userPeerInfo
+        NetPeer userPeerInfo,
+        Color lightColor
         )
     {
         this.networkId = networkId;
@@ -36,6 +37,7 @@ public class UserConfiguration : MonoBehaviour
         this.lightDir = lightDir;
         this.role = userRole;
         this.userPeerInfo = userPeerInfo;
+        this.lightCol = lightColor;
     }
 
     private void Start()

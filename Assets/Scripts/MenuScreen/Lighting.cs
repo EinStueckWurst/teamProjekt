@@ -9,6 +9,7 @@ public class Lighting : MonoBehaviour
     [SerializeField] public RawImage capturedPhoto;
     [SerializeField] public UserConfiguration userConfiguration;
     public Color averageLightColor;
+
     /* Searches the brightest part of the sphere
      * 
      */
@@ -58,10 +59,7 @@ public class Lighting : MonoBehaviour
                 }
             }
         }
-        
-        // average of color of lightest point and the color white (half distance between white and color of brightest point)
-        //averageLightColor = Color.white-((Color.white - texture2D.GetPixel(maxX, maxY))/2) ;
-        //average of all colors of the ball
+
         averageLightColor=new Color(sumRed/counter, sumGreen/counter, sumBlue/counter);
         Vector3 HSVaverageColor;
         Color.RGBToHSV((averageLightColor),out HSVaverageColor.x,out HSVaverageColor.y,out HSVaverageColor.z);
@@ -72,7 +70,7 @@ public class Lighting : MonoBehaviour
         float v = (float)maxY / (float)imgHeight;
         float x = 2 * u - 1;
         float y = 2 * v - 1;
-        float z = 1 - x * x - y * y;
+        float z = Mathf.Sqrt(1 - x * x - y * y);
 
         Debug.Log("X " + x);
         Debug.Log("Y " + y);
@@ -85,21 +83,22 @@ public class Lighting : MonoBehaviour
      */ 
     public void orientLightDirection()
     {
-        //falls GetBrightPart direkt die direction ist
         Vector3 direction = getBrightPart().normalized; // in Eyspace
-
-        //falls GetBrightPart die LookAt Position des Lichtes sein soll
-        //Vector3 direction = (getBrightPart() - light.transform.position).normalized;
-
         Quaternion lightDirection = Quaternion.LookRotation(direction);
 
         lightObj.transform.rotation = Quaternion.Slerp(lightObj.transform.rotation, lightDirection, 1);
         
     }
+
     public void applyLightColor()
     {
         lightObj.color=averageLightColor;
         userConfiguration.setLightCol(averageLightColor);
+    }
+
+    public void reApplyLightColor(Color lightCol)
+    {
+        lightObj.color = lightCol;
     }
 
     public void reorientLightDir(Vector3 lightDir)

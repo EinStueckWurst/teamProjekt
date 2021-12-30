@@ -12,4 +12,5 @@ public class ServerDataStorage : MonoBehaviour
     public List<UserConfiguration> passiveUsers;
 
     public Vector3 meanLightDir;
+    public Color meanLightColor;
 }

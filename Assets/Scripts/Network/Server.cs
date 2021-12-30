@@ -20,6 +20,7 @@ public class Server : MonoBehaviour, INetEventListener
 
     [SerializeField] TextMeshProUGUI passiveUserCount;
     [SerializeField] TextMeshProUGUI averagedLightDir;
+    [SerializeField] TextMeshProUGUI averagedLightColor;
 
     public NetManager netManager;
 
@@ -145,14 +146,17 @@ public class Server : MonoBehaviour, INetEventListener
                     if (userConfigModel.isActive)
                     {
                         this.serverData.meanLightDir = NetworkUtils.averageLightDirections(this.serverData.activeUsers);
+                        this.serverData.meanLightColor = NetworkUtils.averageLightColors(this.serverData.activeUsers);
                         this.lighting.reorientLightDir(this.serverData.meanLightDir);
+                        this.lighting.reApplyLightColor(this.serverData.meanLightColor);
 
                         this.averagedLightDir.SetText($"MeanLightDir: {this.serverData.meanLightDir}");
+                        this.averagedLightColor.SetText($"MeanLightColor: {this.serverData.meanLightColor}");
                         InformAllClientsAverageLightDir();
                     }
                 }
                 break;
-                //Broadcast Recieved Move to all Peers
+                //Broadcast Move to all Peers
             case Action.MAKE_MOVE:
                 if(container.dataModel == DataModel.MOVE)
                 {
@@ -191,6 +195,7 @@ public class Server : MonoBehaviour, INetEventListener
             );
 
         transMissionContainerModel.MeanLightDir = this.serverData.meanLightDir;
+        transMissionContainerModel.MeanLightColor = this.serverData.meanLightColor;
 
         string json = JsonUtility.ToJson(transMissionContainerModel);
         NetDataWriter writer = new NetDataWriter();

@@ -12,7 +12,8 @@ public static class NetworkUtils
             userConfigModel.isActive,
             userConfigModel.lightDir, 
             userConfigModel.role,
-            userConfigModel.userPeerInfo
+            userConfigModel.userPeerInfo,
+            userConfigModel.lightColor
             );
         return userConfig;
     }
@@ -24,7 +25,8 @@ public static class NetworkUtils
             userConfig.isActive,
             userConfig.lightDir,
             userConfig.role,
-            userConfig.userPeerInfo
+            userConfig.userPeerInfo,
+            userConfig.lightCol
             );
 
         return userConfigModel;
@@ -86,6 +88,29 @@ public static class NetworkUtils
 
         return res;
     }
+    
+    /** Returns the mean of all light colors ---> basically 1/n * (v1 + v2 + ... + vn)
+     * 
+     */
+    public static Color averageLightColors(List<UserConfiguration> activeUsers)
+    {
+        Color res = Color.black;
+        for(int i = 0; i < activeUsers.Count; i++)
+        {
+            res.r += activeUsers[i].getLightCol().r;
+            res.g += activeUsers[i].getLightCol().g;
+            res.b += activeUsers[i].getLightCol().b;
+        }
+
+        res.r /= activeUsers.Count;
+        res.g /= activeUsers.Count;
+        res.b /= activeUsers.Count;
+
+        return res;
+    }
+
+
+    
 }
 
 public enum Action

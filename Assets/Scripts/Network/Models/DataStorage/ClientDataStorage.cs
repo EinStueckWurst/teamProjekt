@@ -16,4 +16,5 @@ public class ClientDataStorage : MonoBehaviour
     public int numOfPassiveUsers;
 
     public Vector3 meanLightDir;
+    public Color meanLightColor;
 }

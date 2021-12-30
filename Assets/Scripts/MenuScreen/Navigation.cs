@@ -152,6 +152,7 @@ public class Navigation : MonoBehaviour
         this.capturedPhotoPanelCalibration.CalibrateWithCPU();
         this.viewLightOrientationPanelLighting.orientLightDirection();
         this.viewLightOrientationPanelLighting.saveLightDirection();
+        this.viewLightOrientationPanelLighting.applyLightColor();
         this.menuAnimator.SetTrigger(Triggers.VIEW_LIGHT_ORIENTATION_PANEL);
     }
     
@@ -164,6 +165,7 @@ public class Navigation : MonoBehaviour
 
         this.viewLightOrientationPanelLighting.orientLightDirection();
         this.viewLightOrientationPanelLighting.saveLightDirection();
+        this.viewLightOrientationPanelLighting.applyLightColor();
         this.menuAnimator.SetTrigger(Triggers.VIEW_LIGHT_ORIENTATION_PANEL);
     }
     #endregion

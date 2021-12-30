@@ -20,6 +20,7 @@ public class Client : MonoBehaviour, INetEventListener
 
     [SerializeField] TextMeshProUGUI passiveUserCount;
     [SerializeField] TextMeshProUGUI averagedLightDir;
+    [SerializeField] TextMeshProUGUI averagedLightColor;
 
     public NetManager netManager;
     public void StartClient()
@@ -91,8 +92,6 @@ public class Client : MonoBehaviour, INetEventListener
     {
         this.clientData.serverPeer = peer;
 
-        //Package myUserConfig into a TransmissionContainerModel and setup Action and Datamodel
-        //so on the serverside you can execute with a switch case your desired Action
         UserConfigModel userConfigModel = NetworkUtils.toUserConfigurationModel(this.myUserConfig);
         TransMissionContainerModel transMissionContainerModel = new TransMissionContainerModel(
             Action.REGISTER_USER_CONFIGURATION, 
@@ -129,8 +128,15 @@ public class Client : MonoBehaviour, INetEventListener
                 if(container.dataModel == DataModel.LIGHT_DIRECTION)
                 {
                     this.clientData.meanLightDir = container.MeanLightDir;
+                    this.clientData.meanLightColor = container.MeanLightColor;
+                    
                     this.lighting.reorientLightDir(this.clientData.meanLightDir);
+                    this.lighting.reApplyLightColor(this.clientData.meanLightColor);
+
                     this.averagedLightDir.SetText($"MeanLightDir: {this.clientData.meanLightDir}");
+                    this.averagedLightColor.SetText($"MeanLightColor: {this.clientData.meanLightColor}");
+
+
                     Debug.Log("[CLIENT] Mean Light Dir recieved: "+ this.clientData.meanLightDir);
                 }
                 break;
