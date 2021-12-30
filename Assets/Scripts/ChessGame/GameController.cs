@@ -30,6 +30,10 @@ public class GameController : MonoBehaviour
     [SerializeField] GameObject[] whiteMainChessPieces;
     [SerializeField] GameObject[] whitePawns;
 
+    [Header("Network")]
+    [SerializeField] Client client;
+    [SerializeField] Server server;
+
     int X_Size = 0;
     int Y_Size = 0;
     private Vector2Int currentHover;
@@ -156,9 +160,10 @@ public class GameController : MonoBehaviour
         //Selectiong ChessPiece
         if (Input.GetMouseButtonDown(0))
         {
+
             if (hitPos.x >=0 && hitPos.x <X_Size && hitPos.y >=0 && hitPos.y < Y_Size && this.chessPiecesMap[hitPos.x, hitPos.y] != null)
             {
-                if (this.chessPiecesMap[hitPos.x, hitPos.y].team == Team.WHITE && this.isWhiteTurn)
+                if (this.chessPiecesMap[hitPos.x, hitPos.y].team == Team.WHITE && this.isWhiteTurn && this.myTeam == Team.WHITE)
                 {
                     this.currentlyDraggingChessPiece = this.chessPiecesMap[hitPos.x, hitPos.y];
                     this.possibleMoves = this.currentlyDraggingChessPiece.GetPossibleMoves(ref this.chessPiecesMap, X_Size, Y_Size);
@@ -167,7 +172,7 @@ public class GameController : MonoBehaviour
                     this.highlightTiles();
                 }
 
-                if (this.chessPiecesMap[hitPos.x, hitPos.y].team == Team.BLACK && !this.isWhiteTurn)
+                if (this.chessPiecesMap[hitPos.x, hitPos.y].team == Team.BLACK && !this.isWhiteTurn && this.myTeam == Team.BLACK)
                 {
                     this.currentlyDraggingChessPiece = this.chessPiecesMap[hitPos.x, hitPos.y];
                     this.possibleMoves = this.currentlyDraggingChessPiece.GetPossibleMoves(ref this.chessPiecesMap, X_Size, Y_Size);
@@ -180,15 +185,28 @@ public class GameController : MonoBehaviour
         //Letting Go of the ChessPiece
         if (this.currentlyDraggingChessPiece != null && Input.GetMouseButtonUp(0))
         {
-            Vector3 previousPosition =ChessGameUtil.floorToIntVector3(this.currentlyDraggingChessPiece.currentPosition);
-            bool validMove = this.moveTo(this.currentlyDraggingChessPiece, hitPos, previousPosition);
-            this.removeHighlightTiles();
-            if (!validMove)
+            Vector2Int previousPosition = ChessGameUtil.floorToIntVector2Int(this.currentlyDraggingChessPiece.currentPosition);
+
+            //If move not valid --> abort
+            if (this.validateMove(ref this.possibleMoves, hitPos))
             {
+                this.moveTo(hitPos, previousPosition);
+
+                //NETWORK IMPLEMENTATIOn
+                if(this.myTeam == Team.BLACK)
+                {
+                    this.client.sendChessPieceMove(this.myTeam, previousPosition, hitPos);
+                }
+                
+                if (this.myTeam == Team.WHITE)
+                {
+                    this.server.sendChessPieceMove(this.myTeam, previousPosition, hitPos);
+                }
+
+            } else
+            {
+                this.removeHighlightTiles();
                 this.moveChessPieceBack();
-            }
-            else
-            {
                 this.currentlyDraggingChessPiece = null;
             }
         }
@@ -463,48 +481,44 @@ public class GameController : MonoBehaviour
     /** Validates Movement of the ChessPiece
      * 
      */
-    private bool moveTo(ChessPiece draggingChessPiece, Vector2Int hitPos, Vector3 prevPos)
+    private void moveTo(Vector2Int destination, Vector2Int origin)
     {
-        //If move not valid --> abort
-        if (!this.validateMove(ref this.possibleMoves, hitPos))
-        {
-            return false;
-        }
+        ChessPiece movingChessPiece = this.chessPiecesMap[origin.x, origin.y];
 
         //selecting a tile with another chesspiece on it
-        if (this.chessPiecesMap[hitPos.x, hitPos.y] != null)
+        if (this.chessPiecesMap[destination.x, destination.y] != null)
         {
-            ChessPiece otherChessPiece = this.chessPiecesMap[hitPos.x, hitPos.y];
+            ChessPiece otherChessPiece = this.chessPiecesMap[destination.x, destination.y];
 
-            if (otherChessPiece.team == draggingChessPiece.team)
+            if (otherChessPiece.team == movingChessPiece.team)
             {
-                return false;
+                return;
             }
             else
             {
                 this.killOponent(otherChessPiece);
             }
-
         }
 
-        chessPiecesMap[hitPos.x, hitPos.y] = draggingChessPiece;
-        chessPiecesMap[(int)prevPos.x, (int)prevPos.z] = null;
-        this.moveChessPiece(hitPos.x, hitPos.y);
+        chessPiecesMap[destination.x, destination.y] = movingChessPiece;
+        chessPiecesMap[(int)origin.x, (int)origin.y] = null;
+        this.moveChessPiece(destination.x, destination.y);
 
         this.isWhiteTurn = !this.isWhiteTurn;
-        Vector2Int prevPosVec2 = ChessGameUtil.floorToIntVector2Int(prevPos);
-
         //Tracking every move 
-        this.moveList.Add(new Vector2Int[] { prevPosVec2, new Vector2Int(hitPos.x, hitPos.y) });
+        this.moveList.Add(new Vector2Int[] { origin, new Vector2Int(destination.x, destination.y) });
 
         this.handleSpecialMove();
 
-        if(this.isCheckMate())
+        if (this.isCheckMate())
         {
-            this.checkMate(draggingChessPiece.team);
+            this.checkMate(movingChessPiece.team);
         }
 
-        return true;
+        this.removeHighlightTiles();
+        this.currentlyDraggingChessPiece = null;
+
+        return;
     }
 
     private void handleSpecialMove()
@@ -743,4 +757,12 @@ public class GameController : MonoBehaviour
         this.chessPiecesMap[x, y].SetPosition(newPos);
     }
 
+    public void applyRecievedMove(Vector2Int origin, Vector2Int destination)
+    {
+        ChessPiece target = this.chessPiecesMap[origin.x, origin.y];
+        this.possibleMoves = target.GetPossibleMoves(ref this.chessPiecesMap, X_Size, Y_Size);
+        this.specialMove = target.GetSpecialMoves(ref this.chessPiecesMap, ref moveList, ref possibleMoves);
+
+        this.moveTo(destination, origin);
+    }
 }

@@ -23,6 +23,21 @@ public class CameraController : MonoBehaviour
 
     private IEnumerator StartTakingPhotoCoroutine()
     {
+        if(SystemInfo.deviceType == DeviceType.Handheld)
+        {
+
+     
+        }
+
+        GameObject VideoBG = arCamera.gameObject.transform.GetChild(0).gameObject;
+        Material videoBGMat = VideoBG.GetComponent<Renderer>().material;
+
+        //float aspect = (float)(Screen.width / Screen.height);
+        //this.width = (int)(aspect * Screen.width);
+
+        this.width = videoBGMat.mainTexture.width;
+        this.height= videoBGMat.mainTexture.height;
+
         RenderTexture renderTexture = new RenderTexture(this.width, this.height,24);
         renderTexture.Create();
 

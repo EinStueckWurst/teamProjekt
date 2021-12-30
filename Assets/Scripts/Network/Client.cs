@@ -136,6 +136,22 @@ public class Client : MonoBehaviour, INetEventListener
                     Debug.Log("[CLIENT] TEAM Assigned: "+ this.gameController.myTeam);
                 }
                 break;
+            case Action.MAKE_MOVE:
+                if(container.dataModel == DataModel.MOVE)
+                {
+                    Team mTeam = container.team;
+                    Vector2Int mOrigin = container.originPos;
+                    Vector2Int mDest = container.destinationPos;
+
+                    Debug.Log($"[CLIENT] TEAM {mTeam} -- from : {mOrigin} ---> to: {mDest}");
+
+                    if (this.gameController.myTeam != mTeam)
+                    {
+                        this.gameController.applyRecievedMove(mOrigin, mDest);
+                    }
+
+                }
+                break;
             default:
                 Debug.Log("[Client] Action not detected!");
                 break;
@@ -195,5 +211,23 @@ public class Client : MonoBehaviour, INetEventListener
 
     public void OnConnectionRequest(ConnectionRequest request)
     {
+    }
+
+    public void sendChessPieceMove(Team myTeam, Vector2Int origin, Vector2Int dest)
+    {
+        TransMissionContainerModel containerModel = new TransMissionContainerModel(
+            Action.MAKE_MOVE,
+            DataModel.MOVE
+            );
+
+        containerModel.originPos = origin;
+        containerModel.destinationPos = dest;
+        containerModel.team = myTeam;
+
+        string json = JsonUtility.ToJson(containerModel);
+        NetDataWriter writer = new NetDataWriter();
+        writer.Put(json);
+
+        this.netManager.SendToAll(writer, DeliveryMethod.ReliableOrdered);
     }
 }

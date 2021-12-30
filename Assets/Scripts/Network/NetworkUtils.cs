@@ -104,5 +104,6 @@ public enum DataModel
     NUM_ACTIVE_AND_NUM_PASSIVE_USERS,
     LIGHT_DIRECTION,
     TEAM,
+    MOVE,
 }
 

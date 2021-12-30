@@ -18,6 +18,9 @@ public class TransMissionContainerModel
     public Vector3 MeanLightDir;
     public Team team;
 
+    public Vector2Int originPos;
+    public Vector2Int destinationPos;
+
     public TransMissionContainerModel(
         Action action,
         DataModel dataModel,

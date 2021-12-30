@@ -141,6 +141,27 @@ public class Server : MonoBehaviour, INetEventListener
                     }
                 }
                 break;
+                //Broadcast Recieved Move to all Peers
+            case Action.MAKE_MOVE:
+                if(container.dataModel == DataModel.MOVE)
+                {
+                    Team mTeam = container.team;
+                    Vector2Int mOrigin = container.originPos;
+                    Vector2Int mDest = container.destinationPos;
+
+                    if (this.gameController.myTeam != container.team)
+                    {
+                        this.gameController.applyRecievedMove(mOrigin, mDest);
+                    }
+
+
+                    string jsonPacket = JsonUtility.ToJson(container);
+                    NetDataWriter writer = new NetDataWriter();
+                    writer.Put(jsonPacket);
+
+                    this.netManager.SendToAll(writer, DeliveryMethod.ReliableOrdered);
+                }
+                break;
 
             default:
                 Debug.Log("[Server] Action not detected!");
@@ -241,7 +262,6 @@ public class Server : MonoBehaviour, INetEventListener
 
     public bool StartGame()
     {
-        Debug.Log("ASDSA "+this.serverData.activeUsers.Count);
         if(this.serverData.activeUsers.Count == 2)
         {
             TransMissionContainerModel containerModel = new TransMissionContainerModel(
@@ -255,16 +275,28 @@ public class Server : MonoBehaviour, INetEventListener
             NetDataWriter writer = new NetDataWriter();
             writer.Put(json);
             this.serverData.activeUsers[1].userPeerInfo.Send(writer, DeliveryMethod.ReliableOrdered);
+            this.gameController.myTeam = Team.WHITE;
             return true;
         }
 
         return false;
-        //Check Client Connected -- So Num Active Users != 1
-        //Assign Client a Team (Black or White) --> Assign Myself the Opposite Color
-        //Send it to the Client
+    }
 
+    public void sendChessPieceMove(Team team ,Vector2Int origin, Vector2Int dest)
+    {
+        TransMissionContainerModel containerModel = new TransMissionContainerModel(
+            Action.MAKE_MOVE,
+            DataModel.MOVE
+            );
 
-        //Client Listens to that 
-        //Sets the Color In TheMyUserConfig
+        containerModel.originPos = origin;
+        containerModel.destinationPos = dest;
+        containerModel.team = team;
+
+        string json = JsonUtility.ToJson(containerModel);
+        NetDataWriter writer = new NetDataWriter();
+        writer.Put(json);
+
+        this.netManager.SendToAll(writer, DeliveryMethod.ReliableOrdered);
     }
 }
