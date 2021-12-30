@@ -76,6 +76,12 @@ public class Lighting : MonoBehaviour
         lightObj.transform.rotation = Quaternion.Slerp(lightObj.transform.rotation, lightDirection, 1);
     }
 
+    public void reorientLightDir(Vector3 lightDir)
+    {
+        Quaternion lightDirection = Quaternion.LookRotation(lightDir);
+        lightObj.transform.rotation = Quaternion.Slerp(lightObj.transform.rotation, lightDirection, 1);
+    }
+
     /** Saves Lightdirection in Userconfig
      * 
      */ 

@@ -14,8 +14,10 @@ public class Server : MonoBehaviour, INetEventListener
     [SerializeField] public GameObject lobbyPlayerPanel;
 
     [SerializeField] public GameController gameController;
+    [SerializeField] public Navigation navigation;
+    [SerializeField] public Lighting lighting;
 
-    NetManager netManager;
+    public NetManager netManager;
 
     /* Initializes the Server
      * 
@@ -137,6 +139,7 @@ public class Server : MonoBehaviour, INetEventListener
                     if (userConfigModel.isActive)
                     {
                         this.serverData.meanLightDir = NetworkUtils.averageLightDirections(this.serverData.activeUsers);
+                        this.lighting.reorientLightDir(this.serverData.meanLightDir);
                         InformAllClientsAverageLightDir();
                     }
                 }
@@ -226,6 +229,10 @@ public class Server : MonoBehaviour, INetEventListener
             if(user.userPeerInfo == peer)
             {
                 this.serverData.activeUsers.RemoveAt(i);
+
+                this.StopServer();
+                this.navigation.menuAnimator.SetTrigger(Triggers.VIEW_LIGHT_ORIENTATION_PANEL);
+                this.gameController.ResetChess();
                 return;
             }
         }

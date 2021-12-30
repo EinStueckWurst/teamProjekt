@@ -15,8 +15,9 @@ public class Client : MonoBehaviour, INetEventListener
 
     [SerializeField] public GameController gameController;
     [SerializeField] Navigation navigationController;
+    [SerializeField] public Lighting lighting;
 
-    NetManager netManager;
+    public NetManager netManager;
     public void StartClient()
     {
         this.netManager = new NetManager(this);
@@ -123,6 +124,7 @@ public class Client : MonoBehaviour, INetEventListener
                 if(container.dataModel == DataModel.LIGHT_DIRECTION)
                 {
                     this.clientData.meanLightDir = container.MeanLightDir;
+                    this.lighting.reorientLightDir(this.clientData.meanLightDir);
                     Debug.Log("[CLIENT] Mean Light Dir recieved: "+ this.clientData.meanLightDir);
                 }
                 break;
@@ -199,6 +201,9 @@ public class Client : MonoBehaviour, INetEventListener
     public void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo)
     {
         this.DeactivateOponentIcon();
+        this.StopClient();
+        this.navigationController.menuAnimator.SetTrigger(Triggers.VIEW_LIGHT_ORIENTATION_PANEL);
+        this.gameController.ResetChess();
     }
 
     public void OnNetworkError(IPEndPoint endPoint, SocketError socketError)

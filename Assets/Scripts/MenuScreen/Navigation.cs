@@ -18,7 +18,7 @@ public static class Triggers
 
 public class Navigation : MonoBehaviour
 {
-    [SerializeField] Animator menuAnimator;
+    [SerializeField] public Animator menuAnimator;
 
     [SerializeField] UserConfiguration myUserConfig;
     [SerializeField] CameraController makePhotoPanelCameraController;
@@ -253,22 +253,7 @@ public class Navigation : MonoBehaviour
     {
         Debug.Log("START Game");
         this.menuAnimator.SetTrigger(Triggers.INGAME);
-        //this.enableARCamera();
     }
     #endregion
-
-    //public void enableARCamera()
-    //{
-    //    this.mainCamera.SetActive(false);
-    //    this.aRCamera.SetActive(true);
-    //    this.canvas.worldCamera = this.aRCamera.GetComponent<Camera>();
-    //}
-    
-    //public void disableARCamera()
-    //{
-    //    this.aRCamera.SetActive(false);
-    //    this.mainCamera.SetActive(true);
-    //    this.canvas.worldCamera = this.mainCamera.GetComponent<Camera>();
-    //}
 
 }
