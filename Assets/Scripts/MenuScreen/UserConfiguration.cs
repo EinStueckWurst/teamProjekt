@@ -1,4 +1,5 @@
-﻿using System;
+﻿using LiteNetLib;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -18,6 +19,7 @@ public class UserConfiguration : MonoBehaviour
     public Vector3 lightDir = new Vector3(0, 0, 0);
     public Color lightCol = Color.black;
     public UserRole role = UserRole.SPECTATOR;
+    public NetPeer userPeerInfo;
 
     public UserConfiguration() { }
 
@@ -25,13 +27,15 @@ public class UserConfiguration : MonoBehaviour
         string networkId,
         bool isActive,
         Vector3 lightDir,
-        UserRole userRole
+        UserRole userRole,
+        NetPeer userPeerInfo
         )
     {
         this.networkId = networkId;
         this.isActive = isActive;
         this.lightDir = lightDir;
         this.role = userRole;
+        this.userPeerInfo = userPeerInfo;
     }
 
     private void Start()

@@ -15,6 +15,7 @@ public enum ChessPieceType
 
 public enum Team
 {
+    NONE,
     BLACK,
     WHITE
 }

@@ -5,15 +5,23 @@ using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
+using TMPro;
 using UnityEngine;
 
 public class Server : MonoBehaviour, INetEventListener
 {
     [SerializeField] public UserConfiguration myUserConfig;
     [SerializeField] public ServerDataStorage serverData;
-    [SerializeField] public GameObject lobbyPanel;
-    
-    NetManager netManager;
+    [SerializeField] public GameObject lobbyPlayerPanel;
+
+    [SerializeField] public GameController gameController;
+    [SerializeField] public Navigation navigation;
+    [SerializeField] public Lighting lighting;
+
+    [SerializeField] TextMeshProUGUI passiveUserCount;
+    [SerializeField] TextMeshProUGUI averagedLightDir;
+
+    public NetManager netManager;
 
     /* Initializes the Server
      * 
@@ -28,6 +36,9 @@ public class Server : MonoBehaviour, INetEventListener
         this.netManager.UpdateTime = 15;
         this.netManager.ReuseAddress = true;
 
+        this.serverData.activeUsers = new List<UserConfiguration>();
+        this.serverData.passiveUsers = new List<UserConfiguration>();
+        
         this.serverData.activeUsers.Add(myUserConfig);
         this.serverData.MyNetworkId = this.myUserConfig.networkId;
 
@@ -47,8 +58,8 @@ public class Server : MonoBehaviour, INetEventListener
         {
             if (this.netManager != null)
             {
-                this.netManager.DisconnectAll();
                 this.netManager.Stop();
+                this.netManager = null;
             }
             Debug.Log("SERVER Stopped");
         }
@@ -75,7 +86,6 @@ public class Server : MonoBehaviour, INetEventListener
             {
                 //Deserialize json into UserConfigModel class
                 UserConfigModel userConfigModel = JsonUtility.FromJson<UserConfigModel>(reqDataJson);
-
                 //Check if User is already registered -- basically just check wether user is in activeUsers list or passiveUsers list
                 if (!NetworkUtils.userAlreadyExists(userConfigModel, this.serverData.activeUsers) && !NetworkUtils.userAlreadyExists(userConfigModel, this.serverData.passiveUsers))
                 {
@@ -124,18 +134,46 @@ public class Server : MonoBehaviour, INetEventListener
                 if(container.dataModel == DataModel.USER_CONFIG_MODEL)
                 {
                     UserConfigModel userConfigModel = container.configModel;
+                    userConfigModel.userPeerInfo = peer;
                     NetworkUtils.addUser(userConfigModel, this.serverData.activeUsers, this.serverData.passiveUsers); //wird bei ConnectionReq bereits geprüft, ob der User bereits existiert
-                    UpdateLobbyAfterUserAdded();
+                    this.EnableActiveUserIcon();
+
+                    this.passiveUserCount.SetText($"#PassiveUsers: {this.serverData.passiveUsers.Count}");
                     Debug.Log("SERVER : Amount Of Passive Users: " + this.serverData.passiveUsers.Count);
                     InformAllClientsUserAdded();
 
                     if (userConfigModel.isActive)
                     {
                         this.serverData.meanLightDir = NetworkUtils.averageLightDirections(this.serverData.activeUsers);
+                        this.lighting.reorientLightDir(this.serverData.meanLightDir);
+
+                        this.averagedLightDir.SetText($"MeanLightDir: {this.serverData.meanLightDir}");
                         InformAllClientsAverageLightDir();
                     }
                 }
                 break;
+                //Broadcast Recieved Move to all Peers
+            case Action.MAKE_MOVE:
+                if(container.dataModel == DataModel.MOVE)
+                {
+                    Team mTeam = container.team;
+                    Vector2Int mOrigin = container.originPos;
+                    Vector2Int mDest = container.destinationPos;
+
+                    if (this.gameController.myTeam != container.team)
+                    {
+                        this.gameController.applyRecievedMove(mOrigin, mDest);
+                    }
+
+
+                    string jsonPacket = JsonUtility.ToJson(container);
+                    NetDataWriter writer = new NetDataWriter();
+                    writer.Put(jsonPacket);
+
+                    this.netManager.SendToAll(writer, DeliveryMethod.ReliableOrdered);
+                }
+                break;
+
             default:
                 Debug.Log("[Server] Action not detected!");
                 break;
@@ -157,7 +195,6 @@ public class Server : MonoBehaviour, INetEventListener
         string json = JsonUtility.ToJson(transMissionContainerModel);
         NetDataWriter writer = new NetDataWriter();
         writer.Put(json);
-
         this.netManager.SendToAll(writer, DeliveryMethod.ReliableUnordered);
     }
 
@@ -180,21 +217,6 @@ public class Server : MonoBehaviour, INetEventListener
         this.netManager.SendToAll(writer, DeliveryMethod.ReliableUnordered);
     }
 
-    /** Just Activates any new Users (Index of these activated Users is the same as the index of the activeUser list)
-     * 
-     */
-    void UpdateLobbyAfterUserAdded()
-    {
-        for(int i = 0; i < this.serverData.activeUsers.Count; i++)
-        {
-            Transform t = this.lobbyPanel.transform.GetChild(i);
-            if(!t.gameObject.activeInHierarchy)
-            {
-                this.lobbyPanel.transform.GetChild(i).gameObject.SetActive(true);
-            }
-        }
-    }
-
     public void OnNetworkReceiveUnconnected(IPEndPoint remoteEndPoint, NetPacketReader reader, UnconnectedMessageType messageType)
     {
         if (messageType == UnconnectedMessageType.Broadcast)
@@ -207,6 +229,31 @@ public class Server : MonoBehaviour, INetEventListener
 
     public void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo)
     {
+        this.DisableActiveUserIcon();
+        //Check Wether active USer or passive User disconnected
+        for(int i = 0; i < this.serverData.activeUsers.Count; i++)
+        {
+            UserConfiguration user = this.serverData.activeUsers[i];
+            if(user.userPeerInfo == peer)
+            {
+                this.serverData.activeUsers.RemoveAt(i);
+
+                this.StopServer();
+                this.navigation.menuAnimator.SetTrigger(Triggers.VIEW_LIGHT_ORIENTATION_PANEL);
+                this.gameController.ResetChess();
+                return;
+            }
+        }
+        
+        for(int i = 0; i < this.serverData.passiveUsers.Count; i++)
+        {
+            UserConfiguration user = this.serverData.passiveUsers[i];
+            if(user.userPeerInfo == peer)
+            {
+                this.serverData.passiveUsers.RemoveAt(i);
+                return;
+            }
+        }
     }
 
     public void OnNetworkError(IPEndPoint endPoint, SocketError socketError)
@@ -215,5 +262,56 @@ public class Server : MonoBehaviour, INetEventListener
 
     public void OnNetworkLatencyUpdate(NetPeer peer, int latency)
     {
+    }
+
+    void DisableActiveUserIcon()
+    {
+        this.lobbyPlayerPanel.transform.GetChild(1).gameObject.SetActive(false);
+    }
+
+    void EnableActiveUserIcon()
+    {
+        this.lobbyPlayerPanel.transform.GetChild(1).gameObject.SetActive(true);
+    }
+
+
+    public bool StartGame()
+    {
+        if(this.serverData.activeUsers.Count == 2)
+        {
+            TransMissionContainerModel containerModel = new TransMissionContainerModel(
+                Action.START_GAME,
+                DataModel.TEAM
+                );
+
+            containerModel.team = Team.BLACK;
+
+            string json = JsonUtility.ToJson(containerModel);
+            NetDataWriter writer = new NetDataWriter();
+            writer.Put(json);
+            this.serverData.activeUsers[1].userPeerInfo.Send(writer, DeliveryMethod.ReliableOrdered);
+            this.gameController.myTeam = Team.WHITE;
+            return true;
+        }
+
+        return false;
+    }
+
+    public void sendChessPieceMove(Team team ,Vector2Int origin, Vector2Int dest)
+    {
+        TransMissionContainerModel containerModel = new TransMissionContainerModel(
+            Action.MAKE_MOVE,
+            DataModel.MOVE
+            );
+
+        containerModel.originPos = origin;
+        containerModel.destinationPos = dest;
+        containerModel.team = team;
+
+        string json = JsonUtility.ToJson(containerModel);
+        NetDataWriter writer = new NetDataWriter();
+        writer.Put(json);
+
+        this.netManager.SendToAll(writer, DeliveryMethod.ReliableOrdered);
     }
 }

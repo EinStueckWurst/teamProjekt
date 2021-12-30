@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
+using TMPro;
 using UnityEngine;
 
 public class Client : MonoBehaviour, INetEventListener
@@ -13,7 +14,14 @@ public class Client : MonoBehaviour, INetEventListener
     [SerializeField] public GameObject lobbyPanel;
     [SerializeField] public ClientDataStorage clientData;
 
-    NetManager netManager;
+    [SerializeField] public GameController gameController;
+    [SerializeField] Navigation navigationController;
+    [SerializeField] public Lighting lighting;
+
+    [SerializeField] TextMeshProUGUI passiveUserCount;
+    [SerializeField] TextMeshProUGUI averagedLightDir;
+
+    public NetManager netManager;
     public void StartClient()
     {
         this.netManager = new NetManager(this);
@@ -33,8 +41,8 @@ public class Client : MonoBehaviour, INetEventListener
         {
             if (netManager != null)
             {
-                this.netManager.DisconnectAll();
                 this.netManager.Stop();
+                this.netManager = null;
             }
             Debug.Log("CLIENT Stopped ");
         }
@@ -48,6 +56,7 @@ public class Client : MonoBehaviour, INetEventListener
         if (this.netManager != null && this.netManager.IsRunning)
         {
             this.netManager.PollEvents();
+            //If no Connections send Discovery
             if(this.netManager.ConnectedPeersCount == 0)
             {
                 this.senDiscoveryRequest();
@@ -56,12 +65,16 @@ public class Client : MonoBehaviour, INetEventListener
         }
     }
 
+    /** Discover a Server
+     * 
+     */ 
     public void senDiscoveryRequest()
     {
         var peer = this.netManager.FirstPeer;
 
         if(peer != null && peer.ConnectionState == ConnectionState.Connected)
         {
+
         } 
         else
         {
@@ -76,7 +89,6 @@ public class Client : MonoBehaviour, INetEventListener
 
     public void OnPeerConnected(NetPeer peer)
     {
-
         this.clientData.serverPeer = peer;
 
         //Package myUserConfig into a TransmissionContainerModel and setup Action and Datamodel
@@ -91,7 +103,6 @@ public class Client : MonoBehaviour, INetEventListener
         NetDataWriter writer = new NetDataWriter();
         writer.Put(json);
 
-        
         //Triggering OnNetworkReceive on the serverside and execute the Desired Action
         peer.Send(writer, DeliveryMethod.ReliableOrdered);
     }
@@ -109,7 +120,8 @@ public class Client : MonoBehaviour, INetEventListener
                 {
                     this.clientData.numOfActiveUsers = container.NumActiveUsers;
                     this.clientData.numOfPassiveUsers = container.NumPassiveUsers;
-                    UpdateLobbyAfterUserAdded(this.clientData.numOfActiveUsers);
+                    this.ActivateOponentIcon();
+                    this.passiveUserCount.SetText($"#PassiveUsers: {this.clientData.numOfPassiveUsers}");
                     Debug.Log("[CLIENT] Num of Passive Clients " + this.clientData.numOfActiveUsers);
                 }
                 break;
@@ -117,7 +129,35 @@ public class Client : MonoBehaviour, INetEventListener
                 if(container.dataModel == DataModel.LIGHT_DIRECTION)
                 {
                     this.clientData.meanLightDir = container.MeanLightDir;
+                    this.lighting.reorientLightDir(this.clientData.meanLightDir);
+                    this.averagedLightDir.SetText($"MeanLightDir: {this.clientData.meanLightDir}");
                     Debug.Log("[CLIENT] Mean Light Dir recieved: "+ this.clientData.meanLightDir);
+                }
+                break;
+            case Action.START_GAME:
+                if(container.dataModel == DataModel.TEAM)
+                {
+                    this.gameController.myTeam = container.team;
+                    //Start Game Here
+                    this.navigationController.startGameMenu();
+
+                    Debug.Log("[CLIENT] TEAM Assigned: "+ this.gameController.myTeam);
+                }
+                break;
+            case Action.MAKE_MOVE:
+                if(container.dataModel == DataModel.MOVE)
+                {
+                    Team mTeam = container.team;
+                    Vector2Int mOrigin = container.originPos;
+                    Vector2Int mDest = container.destinationPos;
+
+                    Debug.Log($"[CLIENT] TEAM {mTeam} -- from : {mOrigin} ---> to: {mDest}");
+
+                    if (this.gameController.myTeam != mTeam)
+                    {
+                        this.gameController.applyRecievedMove(mOrigin, mDest);
+                    }
+
                 }
                 break;
             default:
@@ -129,32 +169,17 @@ public class Client : MonoBehaviour, INetEventListener
     /** Activates Users that are Visualized on the Server
      * 
      */
-    void UpdateLobbyAfterUserAdded(int numActiveUsers)
+    void ActivateOponentIcon()
     {
-        this.DeactivateAllUsers();
-        for (int i = 0; i < numActiveUsers; i++)
-        {
-            Transform t = this.lobbyPanel.transform.GetChild(i);
-            if (!t.gameObject.activeInHierarchy)
-            {
-                this.lobbyPanel.transform.GetChild(i).gameObject.SetActive(true);
-            }
-        }
+        this.lobbyPanel.transform.GetChild(1).gameObject.SetActive(true);
     }
 
-    /** Disables all PlayerGameobjects In the Lobby
+    /** Disables all PlayerIcon In the Lobby
      * 
      */
-    private void DeactivateAllUsers()
+    private void DeactivateOponentIcon()
     {
-        for (int i = 0; i < this.lobbyPanel.transform.childCount; i++)
-        {
-            Transform t = this.lobbyPanel.transform.GetChild(i);
-            if (!t.gameObject.activeInHierarchy)
-            {
-                this.lobbyPanel.transform.GetChild(i).gameObject.SetActive(false);
-            }
-        }
+        this.lobbyPanel.transform.GetChild(1).gameObject.SetActive(false);
     }
 
     public void OnNetworkReceiveUnconnected(IPEndPoint remoteEndPoint, NetPacketReader reader, UnconnectedMessageType messageType)
@@ -181,6 +206,10 @@ public class Client : MonoBehaviour, INetEventListener
 
     public void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo)
     {
+        this.DeactivateOponentIcon();
+        this.StopClient();
+        this.navigationController.menuAnimator.SetTrigger(Triggers.VIEW_LIGHT_ORIENTATION_PANEL);
+        this.gameController.ResetChess();
     }
 
     public void OnNetworkError(IPEndPoint endPoint, SocketError socketError)
@@ -193,5 +222,23 @@ public class Client : MonoBehaviour, INetEventListener
 
     public void OnConnectionRequest(ConnectionRequest request)
     {
+    }
+
+    public void sendChessPieceMove(Team myTeam, Vector2Int origin, Vector2Int dest)
+    {
+        TransMissionContainerModel containerModel = new TransMissionContainerModel(
+            Action.MAKE_MOVE,
+            DataModel.MOVE
+            );
+
+        containerModel.originPos = origin;
+        containerModel.destinationPos = dest;
+        containerModel.team = myTeam;
+
+        string json = JsonUtility.ToJson(containerModel);
+        NetDataWriter writer = new NetDataWriter();
+        writer.Put(json);
+
+        this.netManager.SendToAll(writer, DeliveryMethod.ReliableOrdered);
     }
 }

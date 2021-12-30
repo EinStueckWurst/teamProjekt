@@ -17,6 +17,8 @@ public class GameController : MonoBehaviour
     [SerializeField] Camera currentCamera;
     [SerializeField] GameObject victoryScreen;
     [SerializeField] TextMeshProUGUI winningText;
+
+    [SerializeField] Navigation navigation;
     
     [Header("BoardSetup")]
     [SerializeField] ChessBoard chessBoard;
@@ -29,6 +31,10 @@ public class GameController : MonoBehaviour
     [SerializeField] GameObject[] blackPawns;
     [SerializeField] GameObject[] whiteMainChessPieces;
     [SerializeField] GameObject[] whitePawns;
+
+    [Header("Network")]
+    [SerializeField] Client client;
+    [SerializeField] Server server;
 
     int X_Size = 0;
     int Y_Size = 0;
@@ -46,13 +52,14 @@ public class GameController : MonoBehaviour
     private SpecialMove specialMove; 
     private List<Vector2Int[]> moveList = new List<Vector2Int[]>();
 
+    public Team myTeam;
+
     #region UnityBuiltinFunctions
     private void Awake()
     {
         X_Size = chessBoard.TILE_COUNT_X;
         Y_Size = chessBoard.TILE_COUNT_Y;
         mapChessPieces();
-
     }
 
     private void Update()
@@ -155,9 +162,12 @@ public class GameController : MonoBehaviour
         //Selectiong ChessPiece
         if (Input.GetMouseButtonDown(0))
         {
+
             if (hitPos.x >=0 && hitPos.x <X_Size && hitPos.y >=0 && hitPos.y < Y_Size && this.chessPiecesMap[hitPos.x, hitPos.y] != null)
             {
-                if (this.chessPiecesMap[hitPos.x, hitPos.y].team == Team.WHITE && this.isWhiteTurn)
+                bool serverIsRunningAndConnected = this.server != null && this.server.netManager != null && this.server.netManager.IsRunning && this.server.serverData.activeUsers.Count == 2;
+                bool clientIsRunningAndConnected = this.client != null && this.client.netManager != null && this.client.netManager.IsRunning && this.client.netManager.FirstPeer != null && this.client.netManager.FirstPeer.ConnectionState == LiteNetLib.ConnectionState.Connected;
+                if (this.chessPiecesMap[hitPos.x, hitPos.y].team == Team.WHITE && this.isWhiteTurn && this.myTeam == Team.WHITE && serverIsRunningAndConnected)
                 {
                     this.currentlyDraggingChessPiece = this.chessPiecesMap[hitPos.x, hitPos.y];
                     this.possibleMoves = this.currentlyDraggingChessPiece.GetPossibleMoves(ref this.chessPiecesMap, X_Size, Y_Size);
@@ -166,7 +176,7 @@ public class GameController : MonoBehaviour
                     this.highlightTiles();
                 }
 
-                if (this.chessPiecesMap[hitPos.x, hitPos.y].team == Team.BLACK && !this.isWhiteTurn)
+                if (this.chessPiecesMap[hitPos.x, hitPos.y].team == Team.BLACK && !this.isWhiteTurn && this.myTeam == Team.BLACK && clientIsRunningAndConnected)
                 {
                     this.currentlyDraggingChessPiece = this.chessPiecesMap[hitPos.x, hitPos.y];
                     this.possibleMoves = this.currentlyDraggingChessPiece.GetPossibleMoves(ref this.chessPiecesMap, X_Size, Y_Size);
@@ -179,15 +189,28 @@ public class GameController : MonoBehaviour
         //Letting Go of the ChessPiece
         if (this.currentlyDraggingChessPiece != null && Input.GetMouseButtonUp(0))
         {
-            Vector3 previousPosition =ChessGameUtil.floorToIntVector3(this.currentlyDraggingChessPiece.currentPosition);
-            bool validMove = this.moveTo(this.currentlyDraggingChessPiece, hitPos, previousPosition);
-            this.removeHighlightTiles();
-            if (!validMove)
+            Vector2Int previousPosition = ChessGameUtil.floorToIntVector2Int(this.currentlyDraggingChessPiece.currentPosition);
+
+            //If move not valid --> abort
+            if (this.validateMove(ref this.possibleMoves, hitPos))
             {
+                this.moveTo(hitPos, previousPosition);
+
+                //NETWORK IMPLEMENTATIOn
+                if(this.myTeam == Team.BLACK)
+                {
+                    this.client.sendChessPieceMove(this.myTeam, previousPosition, hitPos);
+                }
+                
+                if (this.myTeam == Team.WHITE)
+                {
+                    this.server.sendChessPieceMove(this.myTeam, previousPosition, hitPos);
+                }
+
+            } else
+            {
+                this.removeHighlightTiles();
                 this.moveChessPieceBack();
-            }
-            else
-            {
                 this.currentlyDraggingChessPiece = null;
             }
         }
@@ -462,48 +485,44 @@ public class GameController : MonoBehaviour
     /** Validates Movement of the ChessPiece
      * 
      */
-    private bool moveTo(ChessPiece draggingChessPiece, Vector2Int hitPos, Vector3 prevPos)
+    private void moveTo(Vector2Int destination, Vector2Int origin)
     {
-        //If move not valid --> abort
-        if (!this.validateMove(ref this.possibleMoves, hitPos))
-        {
-            return false;
-        }
+        ChessPiece movingChessPiece = this.chessPiecesMap[origin.x, origin.y];
 
         //selecting a tile with another chesspiece on it
-        if (this.chessPiecesMap[hitPos.x, hitPos.y] != null)
+        if (this.chessPiecesMap[destination.x, destination.y] != null)
         {
-            ChessPiece otherChessPiece = this.chessPiecesMap[hitPos.x, hitPos.y];
+            ChessPiece otherChessPiece = this.chessPiecesMap[destination.x, destination.y];
 
-            if (otherChessPiece.team == draggingChessPiece.team)
+            if (otherChessPiece.team == movingChessPiece.team)
             {
-                return false;
+                return;
             }
             else
             {
                 this.killOponent(otherChessPiece);
             }
-
         }
 
-        chessPiecesMap[hitPos.x, hitPos.y] = draggingChessPiece;
-        chessPiecesMap[(int)prevPos.x, (int)prevPos.z] = null;
-        this.moveChessPiece(hitPos.x, hitPos.y);
+        chessPiecesMap[destination.x, destination.y] = movingChessPiece;
+        chessPiecesMap[(int)origin.x, (int)origin.y] = null;
+        this.moveChessPiece(destination.x, destination.y);
 
         this.isWhiteTurn = !this.isWhiteTurn;
-        Vector2Int prevPosVec2 = ChessGameUtil.floorToIntVector2Int(prevPos);
-
         //Tracking every move 
-        this.moveList.Add(new Vector2Int[] { prevPosVec2, new Vector2Int(hitPos.x, hitPos.y) });
+        this.moveList.Add(new Vector2Int[] { origin, new Vector2Int(destination.x, destination.y) });
 
         this.handleSpecialMove();
 
-        if(this.isCheckMate())
+        if (this.isCheckMate())
         {
-            this.checkMate(draggingChessPiece.team);
+            this.checkMate(movingChessPiece.team);
         }
 
-        return true;
+        this.removeHighlightTiles();
+        this.currentlyDraggingChessPiece = null;
+
+        return;
     }
 
     private void handleSpecialMove()
@@ -665,6 +684,34 @@ public class GameController : MonoBehaviour
     {
         this.winningText.SetText(team.ToString() + " WINS");
         this.victoryScreen.SetActive(true);
+
+        this.navigation.menuAnimator.SetTrigger(Triggers.WINNING_PANEL);
+    }
+
+
+    public void quitAndDisconnect()
+    {
+        if(this.myTeam == Team.WHITE)
+        {
+            //Hoster
+            this.server.StopServer();
+            this.navigation.menuAnimator.SetTrigger(Triggers.VIEW_LIGHT_ORIENTATION_PANEL);
+            this.ResetChess();
+
+        }
+        else if(this.myTeam == Team.BLACK)
+        {
+            //Client
+            this.client.StopClient();
+            this.navigation.menuAnimator.SetTrigger(Triggers.VIEW_LIGHT_ORIENTATION_PANEL);
+            this.ResetChess();
+        }
+        else
+        {
+            //Spectator
+            this.client.StopClient();
+            this.navigation.menuAnimator.SetTrigger(Triggers.VIEW_LIGHT_ORIENTATION_PANEL);
+        }
     }
 
     /** Resets the game
@@ -672,25 +719,31 @@ public class GameController : MonoBehaviour
      */ 
     public void onResetButton()
     {
+        this.navigation.menuAnimator.SetTrigger(Triggers.INGAME);
+        this.ResetChess();
+    }
+
+    public void ResetChess()
+    {
         this.victoryScreen.SetActive(false);
 
         this.currentlyDraggingChessPiece = null;
-        if(this.possibleMoves != null)
+        if (this.possibleMoves != null)
         {
             this.possibleMoves.Clear();
         }
-        if(this.moveList != null)
+        if (this.moveList != null)
         {
             this.moveList.Clear();
         }
-        
+
         this.destroyAllSpawnedQueens();
         this.mapChessPieces();
         for (int x = 0; x < X_Size; x++)
         {
             for (int y = 0; y < Y_Size; y++)
             {
-                if(this.chessPiecesMap[x,y] != null)
+                if (this.chessPiecesMap[x, y] != null)
                 {
                     Vector3 floored = ChessGameUtil.floorToIntVector3(this.chessPiecesMap[x, y].originalPosition);
                     this.chessPiecesMap[x, y].currentPosition = this.chessPiecesMap[x, y].originalPosition;
@@ -704,6 +757,8 @@ public class GameController : MonoBehaviour
 
         this.isWhiteTurn = true;
     }
+
+
 
     /** Destroys all queens that were used for promotion
      * 
@@ -740,5 +795,14 @@ public class GameController : MonoBehaviour
         Vector3 newPos = new Vector3(x, 0, y);
         this.chessPiecesMap[x, y].currentPosition = newPos;
         this.chessPiecesMap[x, y].SetPosition(newPos);
+    }
+
+    public void applyRecievedMove(Vector2Int origin, Vector2Int destination)
+    {
+        ChessPiece target = this.chessPiecesMap[origin.x, origin.y];
+        this.possibleMoves = target.GetPossibleMoves(ref this.chessPiecesMap, X_Size, Y_Size);
+        this.specialMove = target.GetSpecialMoves(ref this.chessPiecesMap, ref moveList, ref possibleMoves);
+
+        this.moveTo(destination, origin);
     }
 }

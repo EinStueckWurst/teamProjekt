@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using LiteNetLib;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -10,7 +11,8 @@ public static class NetworkUtils
             userConfigModel.networkId,
             userConfigModel.isActive,
             userConfigModel.lightDir, 
-            userConfigModel.role
+            userConfigModel.role,
+            userConfigModel.userPeerInfo
             );
         return userConfig;
     }
@@ -21,7 +23,8 @@ public static class NetworkUtils
             userConfig.networkId,
             userConfig.isActive,
             userConfig.lightDir,
-            userConfig.role
+            userConfig.role,
+            userConfig.userPeerInfo
             );
 
         return userConfigModel;
@@ -54,9 +57,23 @@ public static class NetworkUtils
         }
     }
 
+    public static void removeUser(UserConfigModel userConfigModel, List<UserConfiguration> activeUsers, List<UserConfiguration> passiveUsers)
+    {
+        UserConfiguration uc = NetworkUtils.toUserConfiguration(userConfigModel);
+
+        if (uc.isActive)
+        {
+            activeUsers.Add(uc);
+        }
+        else
+        {
+            passiveUsers.Add(uc);
+        }
+    }
+
     /** Returns the mean of all light directions ---> basically 1/n * (v1 + v2 + ... + vn)
      * 
-     */ 
+     */
     public static Vector3 averageLightDirections(List<UserConfiguration> activeUsers)
     {
         Vector3 res = Vector3.zero;
@@ -76,7 +93,9 @@ public enum Action
     REGISTER_USER_CONFIGURATION,
     INFORM_CLIENTS_ABOUT_AMOUNT_OF_USERS,
     INFORM_CLIENTS_ABOUT_MEAN_LIGHT_AVERAGE,
-
+    START_GAME,
+    MAKE_MOVE,
+    RESET_GAME, 
 }
 
 public enum DataModel
@@ -84,5 +103,7 @@ public enum DataModel
     USER_CONFIG_MODEL,
     NUM_ACTIVE_AND_NUM_PASSIVE_USERS,
     LIGHT_DIRECTION,
+    TEAM,
+    MOVE,
 }
 

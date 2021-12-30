@@ -80,7 +80,7 @@ public class Lighting : MonoBehaviour
         return new Vector3(x,y,z);
     }
 
-    /** reorients the directional Light
+    /** Reorients the directional Light
      * 
      */ 
     public void orientLightDirection()
@@ -101,6 +101,13 @@ public class Lighting : MonoBehaviour
         lightObj.color=averageLightColor;
         userConfiguration.setLightCol(averageLightColor);
     }
+
+    public void reorientLightDir(Vector3 lightDir)
+    {
+        Quaternion lightDirection = Quaternion.LookRotation(lightDir);
+        lightObj.transform.rotation = Quaternion.Slerp(lightObj.transform.rotation, lightDirection, 1);
+    }
+
     /** Saves Lightdirection in Userconfig
      * 
      */ 
@@ -109,6 +116,4 @@ public class Lighting : MonoBehaviour
         Vector3 direction = getBrightPart().normalized; // in Eyspace
         userConfiguration.setLightDir(direction);
     }
-
-    
 }

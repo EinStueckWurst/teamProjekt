@@ -21,7 +21,6 @@ public class Calibration : MonoBehaviour
     [SerializeField] Material grayscaleMaterialFilter;
     [SerializeField] Material gaussianBlurrMaterialFilter;
     [SerializeField] Material sobelMaterialFilter;
-    [SerializeField] Material displayCircleMaterialFilter;
 
     [SerializeField] ComputeShader houghComputeShader;
 
@@ -40,14 +39,12 @@ public class Calibration : MonoBehaviour
 
 
 
-    private void OnEnable()
-   {
+    public void OnCalibrationInit()
+    {    
         this.capturedPhoto.texture = cameraController.capturedPhotoRaw.texture;
 
         this.imgWidth = this.cameraController.capturedPhotoRaw.texture.width;
         this.imgHeight = this.cameraController.capturedPhotoRaw.texture.height;
-
-
 
         this.InitializeFilters();
     }
