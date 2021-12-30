@@ -13,6 +13,9 @@ public class Client : MonoBehaviour, INetEventListener
     [SerializeField] public GameObject lobbyPanel;
     [SerializeField] public ClientDataStorage clientData;
 
+    [SerializeField] public GameController gameController;
+    [SerializeField] Navigation navigationController;
+
     NetManager netManager;
     public void StartClient()
     {
@@ -121,6 +124,16 @@ public class Client : MonoBehaviour, INetEventListener
                 {
                     this.clientData.meanLightDir = container.MeanLightDir;
                     Debug.Log("[CLIENT] Mean Light Dir recieved: "+ this.clientData.meanLightDir);
+                }
+                break;
+            case Action.START_GAME:
+                if(container.dataModel == DataModel.TEAM)
+                {
+                    this.gameController.myTeam = container.team;
+                    //Start Game Here
+                    this.navigationController.startGameMenu();
+
+                    Debug.Log("[CLIENT] TEAM Assigned: "+ this.gameController.myTeam);
                 }
                 break;
             default:

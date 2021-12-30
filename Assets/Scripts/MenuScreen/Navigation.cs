@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-
+using UnityEngine.UI;
 
 public static class Triggers
 {
@@ -24,8 +24,15 @@ public class Navigation : MonoBehaviour
     [SerializeField] CameraController makePhotoPanelCameraController;
     [SerializeField] Calibration capturedPhotoPanelCalibration;
     [SerializeField] Lighting viewLightOrientationPanelLighting;
+    [SerializeField] GameObject winningPanel;
     [SerializeField] Client client;
     [SerializeField] Server server;
+
+
+    [SerializeField] GameObject aRCamera;
+    [SerializeField] GameObject mainCamera;
+    [SerializeField] Canvas canvas;
+
 
     #region Stuff
     /** Loads the Scene by given BuildIndex
@@ -91,7 +98,6 @@ public class Navigation : MonoBehaviour
     {
         this.menuAnimator.SetTrigger(Triggers.MAKE_PHOTO_PANEL);
         this.myUserConfig.setActive();
-        this.makePhotoPanelCameraController.Init();
     }
     
     /** Triggers MainMenue -> PassiveButton
@@ -100,6 +106,10 @@ public class Navigation : MonoBehaviour
     public void OnPassivButton()
     {
         this.menuAnimator.SetTrigger(Triggers.LOBBY_PANEL);
+
+        //this.winningPanel.SetActive(true);
+        //this.menuAnimator.SetTrigger(Triggers.WINNING_PANEL);
+
         this.myUserConfig.setPassive();
         Debug.Log("HELLO");
     }
@@ -112,7 +122,6 @@ public class Navigation : MonoBehaviour
     public void OnMakePhotoBackButton()
     {
         this.menuAnimator.SetTrigger(Triggers.MAIN_MENU);
-        this.makePhotoPanelCameraController.DeactivateCamera();
     }
     
     /** Triggers MakePhotoPanel -> MakePhotoButton
@@ -133,7 +142,6 @@ public class Navigation : MonoBehaviour
     public void OnCapturedPhotoBackButton()
     {
         this.menuAnimator.SetTrigger(Triggers.MAKE_PHOTO_PANEL);
-        this.makePhotoPanelCameraController.Init();
     }
 
     /** Triggers CapturedPhotoPanel -> CPU Compute Button
@@ -189,6 +197,15 @@ public class Navigation : MonoBehaviour
         this.server.startServer();
         this.menuAnimator.SetTrigger(Triggers.LOBBY_PANEL);
     }
+
+    public void EnableStartGameButton(GameObject startGameButton) 
+    {
+        startGameButton.SetActive(true);
+    }
+    public void DisableStartGameButton(GameObject startGameButton) 
+    {
+        startGameButton.SetActive(false);
+    }
     #endregion
     
     #region LobbyPanel
@@ -220,14 +237,38 @@ public class Navigation : MonoBehaviour
 
     }
 
-    /** Triggers LobbyPanel -> SearchButton
+    /** Triggers LobbyPanel -> StartGame
      * 
      */
     public void OnStartGameButton()
     {
+        bool gameStarted = this.server.StartGame();
+        if(gameStarted)
+        {
+            this.startGameMenu();
+        }
+    }
+
+    public void startGameMenu()
+    {
+        Debug.Log("START Game");
         this.menuAnimator.SetTrigger(Triggers.INGAME);
-        Debug.Log("START GAme");
+        //this.enableARCamera();
     }
     #endregion
+
+    //public void enableARCamera()
+    //{
+    //    this.mainCamera.SetActive(false);
+    //    this.aRCamera.SetActive(true);
+    //    this.canvas.worldCamera = this.aRCamera.GetComponent<Camera>();
+    //}
+    
+    //public void disableARCamera()
+    //{
+    //    this.aRCamera.SetActive(false);
+    //    this.mainCamera.SetActive(true);
+    //    this.canvas.worldCamera = this.mainCamera.GetComponent<Camera>();
+    //}
 
 }

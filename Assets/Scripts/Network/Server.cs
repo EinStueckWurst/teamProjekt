@@ -12,7 +12,9 @@ public class Server : MonoBehaviour, INetEventListener
     [SerializeField] public UserConfiguration myUserConfig;
     [SerializeField] public ServerDataStorage serverData;
     [SerializeField] public GameObject lobbyPlayerPanel;
-    
+
+    [SerializeField] public GameController gameController;
+
     NetManager netManager;
 
     /* Initializes the Server
@@ -139,6 +141,7 @@ public class Server : MonoBehaviour, INetEventListener
                     }
                 }
                 break;
+
             default:
                 Debug.Log("[Server] Action not detected!");
                 break;
@@ -160,7 +163,6 @@ public class Server : MonoBehaviour, INetEventListener
         string json = JsonUtility.ToJson(transMissionContainerModel);
         NetDataWriter writer = new NetDataWriter();
         writer.Put(json);
-
         this.netManager.SendToAll(writer, DeliveryMethod.ReliableUnordered);
     }
 
@@ -181,14 +183,6 @@ public class Server : MonoBehaviour, INetEventListener
         writer.Put(json);
 
         this.netManager.SendToAll(writer, DeliveryMethod.ReliableUnordered);
-    }
-
-    /** Just Activates any new Users (Index of these activated Users is the same as the index of the activeUser list)
-     * 
-     */
-    void EnableActiveUserIcon()
-    {
-        this.lobbyPlayerPanel.transform.GetChild(1).gameObject.SetActive(true);
     }
 
     public void OnNetworkReceiveUnconnected(IPEndPoint remoteEndPoint, NetPacketReader reader, UnconnectedMessageType messageType)
@@ -226,19 +220,51 @@ public class Server : MonoBehaviour, INetEventListener
         }
     }
 
-    /** Disables Visible-UserIcon in the Lobby
-     * 
-     */
-    void DisableActiveUserIcon()
-    {
-        this.lobbyPlayerPanel.transform.GetChild(1).gameObject.SetActive(false);
-    }
-
     public void OnNetworkError(IPEndPoint endPoint, SocketError socketError)
     {
     }
 
     public void OnNetworkLatencyUpdate(NetPeer peer, int latency)
     {
+    }
+
+    void DisableActiveUserIcon()
+    {
+        this.lobbyPlayerPanel.transform.GetChild(1).gameObject.SetActive(false);
+    }
+
+    void EnableActiveUserIcon()
+    {
+        this.lobbyPlayerPanel.transform.GetChild(1).gameObject.SetActive(true);
+    }
+
+
+    public bool StartGame()
+    {
+        Debug.Log("ASDSA "+this.serverData.activeUsers.Count);
+        if(this.serverData.activeUsers.Count == 2)
+        {
+            TransMissionContainerModel containerModel = new TransMissionContainerModel(
+                Action.START_GAME,
+                DataModel.TEAM
+                );
+
+            containerModel.team = Team.BLACK;
+
+            string json = JsonUtility.ToJson(containerModel);
+            NetDataWriter writer = new NetDataWriter();
+            writer.Put(json);
+            this.serverData.activeUsers[1].userPeerInfo.Send(writer, DeliveryMethod.ReliableOrdered);
+            return true;
+        }
+
+        return false;
+        //Check Client Connected -- So Num Active Users != 1
+        //Assign Client a Team (Black or White) --> Assign Myself the Opposite Color
+        //Send it to the Client
+
+
+        //Client Listens to that 
+        //Sets the Color In TheMyUserConfig
     }
 }

@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using LiteNetLib;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -92,7 +93,9 @@ public enum Action
     REGISTER_USER_CONFIGURATION,
     INFORM_CLIENTS_ABOUT_AMOUNT_OF_USERS,
     INFORM_CLIENTS_ABOUT_MEAN_LIGHT_AVERAGE,
-
+    START_GAME,
+    MAKE_MOVE,
+    RESET_GAME, 
 }
 
 public enum DataModel
@@ -100,5 +103,6 @@ public enum DataModel
     USER_CONFIG_MODEL,
     NUM_ACTIVE_AND_NUM_PASSIVE_USERS,
     LIGHT_DIRECTION,
+    TEAM,
 }
 

@@ -46,13 +46,14 @@ public class GameController : MonoBehaviour
     private SpecialMove specialMove; 
     private List<Vector2Int[]> moveList = new List<Vector2Int[]>();
 
+    public Team myTeam;
+
     #region UnityBuiltinFunctions
     private void Awake()
     {
         X_Size = chessBoard.TILE_COUNT_X;
         Y_Size = chessBoard.TILE_COUNT_Y;
         mapChessPieces();
-
     }
 
     private void Update()
@@ -741,4 +742,5 @@ public class GameController : MonoBehaviour
         this.chessPiecesMap[x, y].currentPosition = newPos;
         this.chessPiecesMap[x, y].SetPosition(newPos);
     }
+
 }

@@ -16,12 +16,14 @@ public class TransMissionContainerModel
     public int NumPassiveUsers;
     
     public Vector3 MeanLightDir;
+    public Team team;
 
     public TransMissionContainerModel(
         Action action,
         DataModel dataModel,
         UserConfigModel configModel = null,
-        NetPeer userPeerInfo = null
+        NetPeer userPeerInfo = null,
+        Team team = Team.NONE
         )
     {
         this.action = action;
@@ -35,6 +37,11 @@ public class TransMissionContainerModel
         if (userPeerInfo != null)
         {
             this.userPeerInfo = userPeerInfo;
+        }
+        
+        if (team != Team.NONE)
+        {
+            this.team = team;
         }
     }
 }
