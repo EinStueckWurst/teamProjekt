@@ -34,6 +34,11 @@ public class Client : MonoBehaviour, INetEventListener
         this.clientData.MyNetworkId = this.myUserConfig.networkId;
         Debug.Log("CLIENT Started");
         Debug.Log("[Client] MY NETWORKID: " + this.myUserConfig.networkId);
+
+        if(this.myUserConfig.isActive)
+        {
+            this.lobbyPanel.transform.GetChild(0).gameObject.SetActive(true);
+        }
     }
 
     public void StopClient()
@@ -46,6 +51,11 @@ public class Client : MonoBehaviour, INetEventListener
                 this.netManager = null;
             }
             Debug.Log("CLIENT Stopped ");
+        }
+
+        if (this.myUserConfig.isActive)
+        {
+            this.lobbyPanel.transform.GetChild(0).gameObject.SetActive(false);
         }
     }
 
@@ -119,7 +129,7 @@ public class Client : MonoBehaviour, INetEventListener
                 {
                     this.clientData.numOfActiveUsers = container.NumActiveUsers;
                     this.clientData.numOfPassiveUsers = container.NumPassiveUsers;
-                    this.ActivateOponentIcon();
+                    this.ActivateOponentIcon(this.clientData.numOfActiveUsers);
                     this.passiveUserCount.SetText($"#PassiveUsers: {this.clientData.numOfPassiveUsers}");
                     Debug.Log("[CLIENT] Num of Passive Clients " + this.clientData.numOfActiveUsers);
                 }
@@ -135,7 +145,6 @@ public class Client : MonoBehaviour, INetEventListener
 
                     this.averagedLightDir.SetText($"MeanLightDir: {this.clientData.meanLightDir}");
                     this.averagedLightColor.SetText($"MeanLightColor: {this.clientData.meanLightColor}");
-
 
                     Debug.Log("[CLIENT] Mean Light Dir recieved: "+ this.clientData.meanLightDir);
                 }
@@ -175,9 +184,19 @@ public class Client : MonoBehaviour, INetEventListener
     /** Activates Users that are Visualized on the Server
      * 
      */
-    void ActivateOponentIcon()
+    void ActivateOponentIcon(int numActiveUsers)
     {
-        this.lobbyPanel.transform.GetChild(1).gameObject.SetActive(true);
+        if(this.myUserConfig.isActive && numActiveUsers == 2)
+        {
+            this.lobbyPanel.transform.GetChild(1).gameObject.SetActive(true);
+        }
+        else if(!this.myUserConfig.isActive)
+        {
+            for (int i = 0; i < numActiveUsers; i++)
+            {
+                this.lobbyPanel.transform.GetChild(i).gameObject.SetActive(true);
+            }
+        }
     }
 
     /** Disables all PlayerIcon In the Lobby
@@ -214,7 +233,14 @@ public class Client : MonoBehaviour, INetEventListener
     {
         this.DeactivateOponentIcon();
         this.StopClient();
-        this.navigationController.menuAnimator.SetTrigger(Triggers.VIEW_LIGHT_ORIENTATION_PANEL);
+        if(this.myUserConfig.isActive)
+        {
+            this.navigationController.menuAnimator.SetTrigger(Triggers.VIEW_LIGHT_ORIENTATION_PANEL);
+        } else
+        {
+            this.navigationController.menuAnimator.SetTrigger(Triggers.MAIN_MENU);
+        }
+        
         this.gameController.ResetChess();
     }
 

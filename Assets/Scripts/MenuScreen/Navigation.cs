@@ -111,6 +111,8 @@ public class Navigation : MonoBehaviour
         //this.menuAnimator.SetTrigger(Triggers.WINNING_PANEL);
 
         this.myUserConfig.setPassive();
+        this.myUserConfig.setUserRoleToSpectator();
+        this.client.StartClient();
         Debug.Log("HELLO");
     }
     #endregion

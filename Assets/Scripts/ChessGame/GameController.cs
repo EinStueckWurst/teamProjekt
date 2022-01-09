@@ -166,7 +166,7 @@ public class GameController : MonoBehaviour
             if (hitPos.x >=0 && hitPos.x <X_Size && hitPos.y >=0 && hitPos.y < Y_Size && this.chessPiecesMap[hitPos.x, hitPos.y] != null)
             {
                 bool serverIsRunningAndConnected = this.server != null && this.server.netManager != null && this.server.netManager.IsRunning && this.server.serverData.activeUsers.Count == 2;
-                bool clientIsRunningAndConnected = this.client != null && this.client.netManager != null && this.client.netManager.IsRunning && this.client.netManager.FirstPeer != null && this.client.netManager.FirstPeer.ConnectionState == LiteNetLib.ConnectionState.Connected;
+                bool clientIsRunningAndConnected = this.client != null && this.client.myUserConfig.isActive && this.client.netManager != null && this.client.netManager.IsRunning && this.client.netManager.FirstPeer != null && this.client.netManager.FirstPeer.ConnectionState == LiteNetLib.ConnectionState.Connected;
                 if (this.chessPiecesMap[hitPos.x, hitPos.y].team == Team.WHITE && this.isWhiteTurn && this.myTeam == Team.WHITE && serverIsRunningAndConnected)
                 {
                     this.currentlyDraggingChessPiece = this.chessPiecesMap[hitPos.x, hitPos.y];
@@ -242,7 +242,7 @@ public class GameController : MonoBehaviour
         Vector2Int floorVec2CurrDragChessPiece = ChessGameUtil.floorToIntVector2Int(currentlyDraggingChessPiece.currentPosition);
         List<Vector2Int> movesToRemove = new List<Vector2Int>();
 
-        //Going through all possible moves, simulate them and check if we are in check
+        //Going through all possible moves, simulate them and check if is in check
         for (int i = 0; i < moves.Count; i++)
         {
             int simX = moves[i].x;
@@ -275,9 +275,7 @@ public class GameController : MonoBehaviour
                 }
             }
 
-            //Simulate Move
-
-            //Set the dragging CP to the next move location int the Simulation
+            //Set the dragging ChessPiece to the next move location
             copiedChessPiecesMap[floorVec2CurrDragChessPiece.x, floorVec2CurrDragChessPiece.y] = null;
             currentlyDraggingChessPiece.currentPosition.x = simX;
             currentlyDraggingChessPiece.currentPosition.z = simY;
@@ -310,14 +308,12 @@ public class GameController : MonoBehaviour
             }
 
             //Is King in Trouble yes? -> Remove Move 
-
             if(this.validateMove(ref simulatedAttackingPiecesMoves, simFlooredVec2KingPos))
             {
                 movesToRemove.Add(moves[i]);
             }
 
             currentlyDraggingChessPiece.currentPosition = savdPosCurrDragChessPiece;
-
         }
 
         //Remove the Moves fro current available movelist
@@ -703,7 +699,14 @@ public class GameController : MonoBehaviour
         {
             //Client
             this.client.StopClient();
-            this.navigation.menuAnimator.SetTrigger(Triggers.VIEW_LIGHT_ORIENTATION_PANEL);
+            if(this.client.myUserConfig.isActive)
+            {
+                this.navigation.menuAnimator.SetTrigger(Triggers.VIEW_LIGHT_ORIENTATION_PANEL);
+            }
+            else
+            {
+                this.navigation.menuAnimator.SetTrigger(Triggers.MAIN_MENU);
+            }
             this.ResetChess();
         }
         else

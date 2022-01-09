@@ -48,6 +48,11 @@ public class Server : MonoBehaviour, INetEventListener
 
         //Mean Light Dir initialized with Server Light direction
         this.serverData.meanLightDir = myUserConfig.getLightDir();
+
+        if (this.myUserConfig.isActive)
+        {
+            this.lobbyPlayerPanel.transform.GetChild(0).gameObject.SetActive(true);
+        }
     }
 
     /* Stops the Server
@@ -63,6 +68,11 @@ public class Server : MonoBehaviour, INetEventListener
                 this.netManager = null;
             }
             Debug.Log("SERVER Stopped");
+        }
+
+        if (this.myUserConfig.isActive)
+        {
+            this.lobbyPlayerPanel.transform.GetChild(0).gameObject.SetActive(false);
         }
     }
 
@@ -137,7 +147,8 @@ public class Server : MonoBehaviour, INetEventListener
                     UserConfigModel userConfigModel = container.configModel;
                     userConfigModel.userPeerInfo = peer;
                     NetworkUtils.addUser(userConfigModel, this.serverData.activeUsers, this.serverData.passiveUsers); //wird bei ConnectionReq bereits geprüft, ob der User bereits existiert
-                    this.EnableActiveUserIcon();
+
+                    this.EnableActiveUserIcon(this.serverData.activeUsers.Count);
 
                     this.passiveUserCount.SetText($"#PassiveUsers: {this.serverData.passiveUsers.Count}");
                     Debug.Log("SERVER : Amount Of Passive Users: " + this.serverData.passiveUsers.Count);
@@ -274,9 +285,12 @@ public class Server : MonoBehaviour, INetEventListener
         this.lobbyPlayerPanel.transform.GetChild(1).gameObject.SetActive(false);
     }
 
-    void EnableActiveUserIcon()
+    void EnableActiveUserIcon(int numActiveUsers)
     {
-        this.lobbyPlayerPanel.transform.GetChild(1).gameObject.SetActive(true);
+        if(numActiveUsers == 2)
+        {
+            this.lobbyPlayerPanel.transform.GetChild(1).gameObject.SetActive(true);
+        }
     }
 
 
@@ -294,7 +308,14 @@ public class Server : MonoBehaviour, INetEventListener
             string json = JsonUtility.ToJson(containerModel);
             NetDataWriter writer = new NetDataWriter();
             writer.Put(json);
+
             this.serverData.activeUsers[1].userPeerInfo.Send(writer, DeliveryMethod.ReliableOrdered);
+
+            for (int i = 0; i < this.serverData.passiveUsers.Count; i++)
+            {
+                this.serverData.passiveUsers[i].userPeerInfo.Send(writer, DeliveryMethod.ReliableOrdered);
+            }
+            
             this.gameController.myTeam = Team.WHITE;
             return true;
         }
