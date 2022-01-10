@@ -29,29 +29,36 @@ public class CameraController : MonoBehaviour
      
         }
 
-        GameObject VideoBG = arCamera.gameObject.transform.GetChild(0).gameObject;
-        Material videoBGMat = VideoBG.GetComponent<Renderer>().material;
+        //GameObject VideoBG = arCamera.gameObject.transform.GetChild(0).gameObject;
+        //Material videoBGMat = VideoBG.GetComponent<Renderer>().material;
 
-        //float aspect = (float)(Screen.width / Screen.height);
-        //this.width = (int)(aspect * Screen.width);
 
-        this.width = videoBGMat.mainTexture.width;
-        this.height= videoBGMat.mainTexture.height;
+        ////this.height = (int)(aspect * Screen.height);
 
-        RenderTexture renderTexture = new RenderTexture(this.width, this.height,24);
+        RenderTexture activeTMP = RenderTexture.active;
+
+        this.width = Screen.width;
+        this.height = Screen.height;
+
+        RenderTexture renderTexture = new RenderTexture(this.width, this.height,1);
         renderTexture.Create();
 
         this.arCamera.targetTexture = renderTexture;
         RenderTexture.active = renderTexture;
         this.arCamera.Render();
+
+        //float aspect = (float)(Screen.width / Screen.height);
+        //this.width = (int)(aspect * Screen.width);
+
         Texture2D snap = new Texture2D(this.width, this.height, TextureFormat.RGB24, false);
         snap.ReadPixels(new Rect(0, 0, width, height), 0, 0);
         snap.Apply();
-        RenderTexture.active = null;
         this.arCamera.targetTexture = null;
+        
 
         this.capturedPhotoRaw.texture = Util.ToRenderTexture(Util.ResampleAndCrop(snap,848, 848), RenderTexture.active);
 
+        RenderTexture.active = activeTMP;
         this.capturedPhotoPanel.OnCalibrationInit();
         yield return new WaitForEndOfFrame();
     }

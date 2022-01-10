@@ -106,11 +106,11 @@
                     1.0
                     );
  /*               "Cropp" Image*/
-                if (i.uv.x < 0.3f || i.uv.x > 0.7f) {
+                if (i.uv.x < 0.2f || i.uv.x > 0.8f) {
                     gl_FragColor = float4(0, 0, 0, 1);
                 }
 
-                if (i.uv.y < 0.3f || i.uv.y > 0.7f) {
+                if (i.uv.y < 0.2f || i.uv.y > 0.8f) {
                     gl_FragColor = float4(0, 0, 0, 1);
                 }
                     return gl_FragColor;

@@ -151,7 +151,7 @@ public static class Util
         Matrix4x4 gaussianKernel = new Matrix4x4();
 
         float para = 0;
-        float sigma = 1000.0f; //standard deviation of the distribution (ca.1.0)
+        float sigma = 500f; //standard deviation of the distribution (ca.1.0)
         float sum = 0; //sum is for normalization
 
         float sigmaParameter = 2 * sigma * sigma;
